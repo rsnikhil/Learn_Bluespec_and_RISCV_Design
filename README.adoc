@@ -1,0 +1,114 @@
+= Learn Bluespec and RISCV Design
+Rishiyur S. Nikhil, Bluespec, Inc. (c) 2024
+:revnumber: v0.95
+:revdate: 2024-02-27
+:sectnums:
+:THIS_FILE: README
+// :toc:
+// :toclevels: 3
+// :toc-title: Contents
+:keywords: Bluespec, B-Lang, BSV, BH, RISC-V, Pipelined CPU, HDL, HLHDL, High Level Hardware Design Language, Fife, Drum
+
+// ================================================================
+
+image::Figures/Fig_Under_Construction.png[align="left", width=100]
+
+Expected date for a complete first draft: early March 2024
+
+[NOTE]
+====
+The source for this document is `{THIS_FILE}.adoc` that can be read
+as-is in a text-editor or terminal window.  It can also be processed
+with the free, open-source `asciidoctor` tool into `{THIS_FILE}.html`
+and then viewed in any browser.
+====
+
+// ================================================================
+
+== Introduction
+
+This repository contains free and open source material for learning
+the *BSV* High-Level Hardware Design Language (HLHDL), and for
+learning how to design a simple pipelined implementation of a RISC-V
+CPU.
+
+There are two target audiences:
+
+* Learn general principles of designing a RISC-V pipelined CPU (5+
+  stages, mostly in-order).
+
+** As a side-effect, learn digital design using Bluespec BSV.
+
+* Learn digital hardware design using Bluespec BSV.
+
+** As a side-effect, learn how to design a pipelined RISC-V CPU, which
+   is used as a running example.
+
+The materials consist of a textbook and complete BSV source codes that
+can be compiled to run in a Verilog simulator.  The generated Verilog
+is also synthesizable for FPGAs, but needs to be attached to at least
+a memory and preferably also to a UART.
+
+The textbook is in
+link:Book/Book_BLang_RISCV.pdf[`Book/Book_BLang_RISCV.pdf`].
+
+The source codes are in timestamped releases (tar files) in the Code/
+repository.  Each release includes a `Build_and_Run_Guide` document in
+its `Doc/` directory that explains how to compile the Drum and Fife
+source codes into Verilog using free and open-source tools.
+
+NOTE: A possible future edition of this book will present the same
+      material using BSV's Haskell-like sister-language, *BH*.
+
+// ================================================================
+
+== About RISC-V and BSV
+
+RISC-V is an open-standard ISA (Instruction-Set Architecture).  ISA
+specification documents can be found at
+https://riscv.org/technical/specifications/[].  The site
+https://riscv.org/[] also contains much additional useful material, in
+particular information on GNU compilation/debugging tools gcc, gdb,
+etc.
+
+Bluespec BSV is a free, open-source HLHDL (High-Level Hardware Design
+Language), a significant improvement in expressive power and
+simplicity compared to Verilog/SystemVerilog/VHDL.  Its free,
+open-source compiler is available at:
+link:https://github.com/B-Lang-org/bsc[].  An appendix in the book
+explores "Why BSV?" in more detail.
+
+// ================================================================
+
+== About the pedagogic approach
+
+We design two RISC-V CPU implementations, in this order:
+
+* *Drum*, an "FSM" implementation, which almost looks like a software
+  RISC-V simulator written in C, except that it is fully synthesizable
+  and runs on FPGAs.
+
+* *Fife*, a 5+ stage, mostly in-order, pipelined implementation,
+  including simple branch prediction, scoreboarding, in-order
+  retirement, and speculative STOREs with a store-buffer.
+
+The two implementations share _all_ the functional parts of RISC-V
+code, which are covered in the first part of the book, with *Drum*.
+By the time we reach the second part of the book, on *Fife*, we focus
+purely on pipelining questions, since all RISC-V-specific semantics
+have already been covered with *Drum*.
+
+The book interleaves RISC-V topics and BSV topics in a mutually
+reinforcing way, and describes the full design process and the code in
+detail.
+
+The book and the two implementations focus on the "RV32I" subset of
+the RISC-V Unprivileged ISA specification, plus a few features from
+the Privileged specification to handle illegal instructions and other
+traps, and interrupts.  This is adequate for small embedded systems.
+A discussion at the end of the book suggests how to extend to
+Linux-capability (RV64I, A,M,F,D,C extensions, virtual memory,
+interrupts, etc.).  Please contact the author to see if any materials
+become available on these topics.
+
+// ================================================================
