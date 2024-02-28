@@ -1,4 +1,4 @@
-= Learn Bluespec and RISCV Design
+= Learn Bluespec and RISC-V Design
 (c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
 :revnumber: v0.960
 :revdate: 2024-02-28.A
