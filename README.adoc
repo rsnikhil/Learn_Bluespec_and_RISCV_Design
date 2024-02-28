@@ -1,7 +1,7 @@
 = Learn Bluespec and RISCV Design
-Rishiyur S. Nikhil, Bluespec, Inc. (c) 2024
-:revnumber: v0.95
-:revdate: 2024-02-27
+(c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
+:revnumber: v0.960
+:revdate: 2024-02-28.A
 :sectnums:
 :THIS_FILE: README
 // :toc:
@@ -9,21 +9,24 @@ Rishiyur S. Nikhil, Bluespec, Inc. (c) 2024
 // :toc-title: Contents
 :keywords: Bluespec, B-Lang, BSV, BH, RISC-V, Pipelined CPU, HDL, HLHDL, High Level Hardware Design Language, Fife, Drum
 
-// ================================================================
+// ****************************************************************
 
 image::Figures/Fig_Under_Construction.png[align="left", width=100]
 
-Expected date for a complete first draft: early March 2024
+This is an early release of work-in-progress, for the convenience of
+early reviewers. Expected availability of first draft: early March
+2024. Until then, this repo may be updated on a daily (or more
+frequent) basis.
 
 [NOTE]
 ====
-The source for this document is `{THIS_FILE}.adoc` that can be read
-as-is in a text-editor or terminal window.  It can also be processed
-with the free, open-source `asciidoctor` tool into `{THIS_FILE}.html`
-and then viewed in any browser.
+This document's source is `{THIS_FILE}.adoc` and can be read as-is
+in a text-editor or terminal.  It can also be processed with the free,
+open-source `asciidoctor` tool into `{THIS_FILE}.html`, viewable in
+any browser.
 ====
 
-// ================================================================
+// ****************************************************************
 
 == Introduction
 
@@ -52,15 +55,17 @@ a memory and preferably also to a UART.
 The textbook is in
 link:Book/Book_BLang_RISCV.pdf[`Book/Book_BLang_RISCV.pdf`].
 
-The source codes are in timestamped releases (tar files) in the Code/
-repository.  Each release includes a `Build_and_Run_Guide` document in
-its `Doc/` directory that explains how to compile the Drum and Fife
-source codes into Verilog using free and open-source tools.
+The source codes are in timestamped releases (tar files) in the
+`Code/` repository.  Each release includes
+`Doc/Build_and_Run_Guide.adoc` that explains how to compile and run
+the Drum and Fife source codes (using a Verilog simulator) using free
+and open-source tools.
 
-NOTE: A possible future edition of this book will present the same
-      material using BSV's Haskell-like sister-language, *BH*.
+NOTE: For Haskell enthusiasts: a possible future edition of this book
+      will present the same material using BSV's Haskell-like
+      sister-language, *BH*.
 
-// ================================================================
+// ****************************************************************
 
 == About RISC-V and BSV
 
@@ -78,15 +83,15 @@ open-source compiler is available at:
 link:https://github.com/B-Lang-org/bsc[].  An appendix in the book
 explores "Why BSV?" in more detail.
 
-// ================================================================
+// ****************************************************************
 
 == About the pedagogic approach
 
-We design two RISC-V CPU implementations, in this order:
+We describe the design of two RISC-V CPU implementations, in this order:
 
 * *Drum*, an "FSM" implementation, which almost looks like a software
   RISC-V simulator written in C, except that it is fully synthesizable
-  and runs on FPGAs.
+  and runnable on FPGAs.
 
 * *Fife*, a 5+ stage, mostly in-order, pipelined implementation,
   including simple branch prediction, scoreboarding, in-order
@@ -98,17 +103,26 @@ By the time we reach the second part of the book, on *Fife*, we focus
 purely on pipelining questions, since all RISC-V-specific semantics
 have already been covered with *Drum*.
 
-The book interleaves RISC-V topics and BSV topics in a mutually
-reinforcing way, and describes the full design process and the code in
-detail.
+The book interleaves RISC-V topics and BSV topics in an incremental
+and mutually reinforcing way, and describes the full design process
+and the code in detail.  We hope to avoid steep learning curves for
+BSV and for RISC-V.
 
 The book and the two implementations focus on the "RV32I" subset of
 the RISC-V Unprivileged ISA specification, plus a few features from
-the Privileged specification to handle illegal instructions and other
-traps, and interrupts.  This is adequate for small embedded systems.
-A discussion at the end of the book suggests how to extend to
-Linux-capability (RV64I, A,M,F,D,C extensions, virtual memory,
-interrupts, etc.).  Please contact the author to see if any materials
-become available on these topics.
+the Privileged specification sufficient to to handle illegal
+instructions and other traps, and interrupts.  This is adequate for
+small embedded systems.  A discussion at the end of the book suggests
+how to extend Drum and Fife to Linux-capability (RV64I, A,M,F,D,C
+extensions, virtual memory, interrupts, etc.).  Please contact the
+author to see if any materials become available on these topics in the
+future.
 
 // ================================================================
+
+=== Feedback welcome
+
+The author welcomes feedback on this material: specifically errata,
+but more generally on the pedagogic experience.
+
+// ****************************************************************
