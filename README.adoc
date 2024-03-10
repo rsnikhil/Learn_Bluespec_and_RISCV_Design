@@ -1,9 +1,10 @@
 = Learn Bluespec and RISC-V Design
 (c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
 :revnumber: v0.965
-:revdate: 2024-03-08.A
+:revdate: 2024-03-10.A
 :sectnums:
 :THIS_FILE: README
+:RELEASE: 2024-03-10.A
 // :toc:
 // :toclevels: 3
 // :toc-title: Contents
@@ -52,14 +53,24 @@ can be compiled to run in a Verilog simulator.  The generated Verilog
 is also synthesizable for FPGAs, but needs to be attached to at least
 a memory and preferably also to a UART.
 
-The textbook is in
-link:Book/Book_BLang_RISCV.pdf[`Book/Book_BLang_RISCV.pdf`].
+This repo has one or more timestamped release directories, such as
+{RELEASE} with sub-directories `Book` and `Code`.
 
-The source codes are in timestamped releases (tar files) in the
-`Code/` repository.  Each release includes
+----
+    ├── Book
+    └── Code
+----
+
+The textbook is in subdirectory `Book/` at
+link:{RELEASE}/Book/Book_BLang_RISCV.pdf[`Book/Book_BLang_RISCV.pdf`].
+
+The source codes are in subdirectory `Code/`.  This includes includes
 `Doc/Build_and_Run_Guide.adoc` that explains how to compile and run
 the Drum and Fife source codes (using a Verilog simulator) using free
 and open-source tools.
+
+The book and code are synchronized for each release---the actual
+source code is excerpted in descriptions in the book.
 
 NOTE: For Haskell enthusiasts: a possible future edition of this book
       could present the same material using BSV's sister language *BH*
