@@ -1,10 +1,10 @@
 = Learn Bluespec and RISC-V Design
 (c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
-:revnumber: v0.965
-:revdate: 2024-03-10.A
+:revnumber: v0.966
+:revdate: 2024-03-18.A
 :sectnums:
 :THIS_FILE: README
-:RELEASE: 2024-03-12.A
+:RELEASE: 2024-03-18.A
 // :toc:
 // :toclevels: 3
 // :toc-title: Contents
@@ -15,7 +15,7 @@
 image::Figures/Fig_Under_Construction.png[align="left", width=100]
 
 This is an early release of work-in-progress, for the convenience of
-early reviewers. Expected availability of first draft: mid- to
+early reviewers. Expected availability of full first draft: mid- to
 late-March 2024. Until then, this repo may be updated on a daily (or
 more frequent) basis.
 
@@ -60,6 +60,8 @@ This repo has one or more timestamped release directories, such as
     ├── Book
     └── Code
 ----
+
+Please look for the latest timestamped release.
 
 The textbook is in subdirectory `Book/` at
 link:{RELEASE}/Book/Book_BLang_RISCV.pdf[`Book/Book_BLang_RISCV.pdf`].

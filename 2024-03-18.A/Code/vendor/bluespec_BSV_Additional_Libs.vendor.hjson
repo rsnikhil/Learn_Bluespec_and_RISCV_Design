@@ -1,0 +1,23 @@
+{
+  // Name of the vendored-in project
+  name: "bluespec_BSV_Additional_Libs",
+
+  // Target directory
+  // All imported code is copied into this directory
+  target_dir: "bluespec_BSV_Additional_Libs",
+
+  // Git upstream source code repository
+  upstream: {
+    // Upstream Git repository URL. HTTPS URLs are preferred.
+    url: "https://github.com/bluespec/BSV_Additional_Libs",
+    // Upstream revision or branch. Can be a commit hash or a branch name.
+    rev: "master",
+  },
+
+  // Pick specific files or subdirectories from upstream and
+  // specify where to put them.
+  mapping: [
+    {from:'src/Cur_Cycle.bsv',        to: 'Cur_Cycle.bsv'},
+    {from:'src/Semi_FIFOF.bsv',       to: 'Semi_FIFOF.bsv'},
+  ]
+}
