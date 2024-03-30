@@ -1,10 +1,10 @@
 = Learn Bluespec and RISC-V Design
 (c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
 :revnumber: v0.966
-:revdate: 2024-03-21.A
+:revdate: 2024-03-30.A
 :sectnums:
 :THIS_FILE: README
-:RELEASE: 2024-03-21.A
+:RELEASE: 2024-03-30.A
 // :toc:
 // :toclevels: 3
 // :toc-title: Contents
