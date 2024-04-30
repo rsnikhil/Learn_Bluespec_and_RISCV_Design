@@ -1,0 +1,155 @@
+= Notes on installing *bsc* and Verilator and creating an Ubuntu instance on Amazon AWS
+(c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
+:revnumber: v1.1
+:sectnums:
+:THIS_FILE: Installing_bsc_Verilator_etc
+:toc:
+:toclevels: 3
+:toc-title: Contents
+:keywords: Bluespec, B-Lang, BSV, Verilator
+
+// ****************************************************************
+
+[NOTE]
+====
+The source for this document is `{THIS_FILE}.adoc` that can be read
+as-is in a text-editor or in a terminal window.  It can also be
+processed with the free, open-source `asciidoctor` tool into
+`{THIS_FILE}.html` which can be viewed in any browser.
+====
+
+// ****************************************************************
+
+== Introduction
+
+The next two sections briefly describe how to set up the Bluespec
+_bsc_ compiler and the Verilator compiler which are needed to build
+and run Bluesim and Verilator simulations, respectively, for Drum and
+Fife.  We assume the Ubuntu Linux operating system but the setup is
+quite similar on any other flavor of Linux, and on MacOS.
+
+You can install it on your own Ubuntu system; or, you could use an
+Ubuntu instance on Amazon AWS; the last section of this document shows
+how.
+
+// ****************************************************************
+
+== Installing the _bsc_ compiler
+
+* Go to https://github.com/B-Lang-org/bsc[] ; you will be on the README page.
+* Go to the "Download" section, click on the "Releases" link.
+* On the "Releases" page, in the "Assets" section, find the release for your
+  version of Ubuntu, such as `bsc-2024.01-ubuntu-22.04.tar.gz` for Ubuntu 22.04.
+* Download it to your Ubuntu computer, and untar it, say in a directory `BSC`.
+* Define the following environment variables (the latter places _bsc_
+  in your shell's search path for executables):
+
+----
+    export BLUESPEC_HOME=BSC/bsc-2024.01-ubuntu-22.04
+    export PATH=BSC/bsc-2024.01-ubuntu-22.04/bin:$PATH
+----
+
+* Check that it's been installed: the first command will run _bsc_ and
+  have it print out its version; the second command will print its
+  help message:
+
+----
+    $ bsc -v
+    $ bsc --help
+----
+
+// ****************************************************************
+
+== Installing Verilator
+
+The Verilator web site is https://www.veripool.org/verilator[], with
+detailed installation instructions.  In the "Installation &
+Documentation" section, follow the "Verilator installation and package
+directory structure" link, which will take you to
+https://verilator.org/guide/latest/install.html[].
+
+The easiest way to install Verilator is described in the first section
+on that page, "Package Manager Quick Install", namely to use Ubuntu's
+standard `apt-get install` or `apt install` mechanism.  This usually
+installs a somewhat older version of Verilator than the latest, but
+that is usually fine.
+
+=== If you want to install a later version of Verilator ...
+
+Follow the "Detailed Build Instructions" for building verilator from
+sources.
+
+* In the "Install Prerequisites" section, perform all the `sudo
+  apt-get install` steps listed, except the last section which is only
+  needed for Verilator developers.
+
+* Skip the "Install SystemC" and "Install GtkWave" sections.
+
+* Clone the repository, set it to the stable commit:
+
+----
+    $ git clone https://github.com/verilator/verilator
+    $ cd verilator
+    $ git checkout stable     
+    $ autoconf
+----
+
+* Follow the "1. Run-in-Place from VERILATOR_ROOT" installation flow:
+
+----
+    $ export VERILATOR_ROOT=`pwd`   # if your shell is bash
+    $ setenv VERILATOR_ROOT `pwd`   # if your shell is csh
+    $ ./configure
+    $ make
+    $ make test
+----
+
+The Verilator executable is in `bin/verilator`: make sure it is in your `PATH`
+
+// ****************************************************************
+
+== Creating an Ubuntu instance on Amazon AWS
+
+* Create an AWS account.  Details at: https://aws.amazon.com[]
+* After sign-in, click on "EC2"
+  If you don't see "EC2", click on "View all services", then click on "Compute EC2"
+* Click on "Instances" (in "EC2 Dashboard" on left). This will show
+  instances you have created so far, and their "state" (Running,
+  Stopped, ...)
+* Click on "Launch Instances" (orange button at top right)
+
+* Fill in:
+** Name and tags: ... choose a name for your instance
+** Amazon Machine Image: ... select a recent, stable "Ubuntu", such as Version 22.04 LTS.
+** Instance type: ... we recommend selecting "m6i.2xlarge" (8 vCPU, 32 GiB Mem)
+
+** Key pair (login): If you already have a public/private key pair on
+   AWS, it will offer that as a choice in a drop-down menu.  If not,
+   then click on the button to create a new key pair.  When created,
+   you will have to save your private key on your local machine in a
+   file such as `~/.ssh/My_AWS_Key.pem`.
+
+** Network Settings: ... leave everything as is.
+** Configure Storage: ... offers 30 GiB; raise it if you wish
+** Advanced Details: ... we recommend, for "Termination protection",
+   select "Enable", so that you can't accidentallly delete your instance.
+** Finally, click "Launch Instance"
+
+* Go back to EC2 Dashboard; the new instance will be shown, up and running
+** Various controls allow you to stop/start your instance. Remember to
+   stop your instance when you are not using it, to avoid unnecessary
+   billing!
+
+* To connect to your new instance from a terminal on your computer:
+** On the EC2 dashboard, select the new instance. In the displayed
+   below, there will be an entry for "Public IPv4 DNS", such as:
+   `ec2-54-175-18-155.compute-1.amazonaws.com`.  Copy the DNS address.
+** From a terminal on your computer, connect to your instance:
+----
+    $ ssh -i ~/.ssh/My_AWS_key.pem  ubuntu@ec2-54-175-18-155.compute-1.amazonaws.com
+----
+
+* In Ubuntu, see the previous two sections of this document for
+  installation of _bsc_ and Verilator.
+
+// ****************************************************************

@@ -1,11 +1,11 @@
 = Learn Bluespec and RISC-V Design
 (c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
-:revnumber: v0.970
-:revdate: 2024-04-14.A
+:revnumber: v0.971
+:revdate: 2024-04-30.A
 :sectnums:
-// :toc:
-// :toclevels: 3
-// :toc-title: Contents
+:toc:
+:toclevels: 3
+:toc-title: Contents
 :keywords: Bluespec, B-Lang, BSV, BH, RISC-V, Pipelined CPU, HDL, HLHDL, High Level Hardware Design Language, Fife, Drum
 
 // ****************************************************************
@@ -41,20 +41,32 @@ Outline of repository contents:
 
 `Book_BLang_RISCV.pdf`: Textbook (about 300 pages).
 
-`Code`: Full source codes for Drum and Fife, along with Makefiles to
+`Code/`: Full source codes for Drum and Fife, along with Makefiles to
 build and run (Verilog simulation).  `Build_and_Run_Guide.adoc`
 explains how to compile and run, using free and open-source tools
 (_bsc_ compiler to compile BSV to Verilog, and _Verilator_ to simulate
 the Verilog).  [Coming soon: separate documentation on how to run Drum
 and Fife on FPGAs on Amazon AWS F1 instances.]
 
-`Slides`: Lecture slides.
+`Slides/`: Lecture slides.
 
-`Exercises`: Suggested exercises for labs/homeworks.
+`Exercises/`: Suggested exercises for labs/homeworks.
 
 // ****************************************************************
 
-== About the pedagogic approach (feedback welcome!)
+== Installing prerequisite software tools
+
+To compile and run BSV code in simulation (Drum, Fife, exercises) you
+will need the _bsc_ compiler (compiles BSV source codes into a Bluesim
+simulation executable, and/or also into Verilog).  If you want to
+simulate the generated Verilog (instead of using Bluesim), we
+recommend using Verilator.  Please see: +
+`Doc/Installing_bsc_Verilator_etc.{adoc,html}` +
+for installation guidance.
+
+// ****************************************************************
+
+== About the pedagogic approach
 
 We describe the design of two RISC-V CPU implementations, in this order:
 
@@ -77,12 +89,23 @@ reinforcing way, and describe the full design and verification process
 and the code in detail.  We hope to avoid steep learning curves for
 BSV and for RISC-V.
 
+The exercises in `Exercises/` are synchronized with the Book, in which
+there are small sections titled **Exercises**, each pointing to a
+particular `Exercises/` sub-directory.  In each such sub-directory
+there is a README describing the exercise in more detail.  The first
+task in each README is normally just to run the code provided for that
+exercise, which should compile and run immediately with the provided
+Makefile (this can also be demo'd during a lecture).  The README then
+has suggestions for variations for students to try on their own.
+
 *Drum* and *Fife* implement the "RV32I" subset of the RISC-V
 Unprivileged ISA, plus a few features from the Privileged
 specification sufficient to to handle illegal instructions and other
 traps, and interrupts.  This is adequate for small embedded systems.
 The book discusses how to extend *Drum* and *Fife* into 64-bit
 Linux-capability.
+
+We welcome feedback about your learning experience.
 
 // ****************************************************************
 
@@ -104,12 +127,12 @@ explores "Why BSV?" in more detail.
 
 // ****************************************************************
 
-== Status (as of April 14, 2024)
+== Status (as of April 30, 2024)
 
 * *Book*: complete except for last two chapters: suggestions for
   future study of RISC-V and future study of BSV.
 
-* *Code*: complete.
+* *Code*: Drum and Fife codes complete.
 
 * *Slides* (for lectures): In progress; expected completion by end of
   June 2024.
