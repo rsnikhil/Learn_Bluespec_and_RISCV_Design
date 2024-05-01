@@ -58,12 +58,19 @@ how.
     $ bsc --help
 ----
 
+In your installation you will find the following documents (PDFs):
+
+* BSV Language Reference Guide
+* BSV Libraries Reference Guide
+* BSC User Guide
+
+These PDFs can also be downloaded directy from the _bsc_ site.
+
 // ****************************************************************
 
 == Installing Verilator
 
-The Verilator web site is https://www.veripool.org/verilator[], with
-detailed installation instructions.  In the "Installation &
+Go to https://www.veripool.org/verilator[].  In the "Installation &
 Documentation" section, follow the "Verilator installation and package
 directory structure" link, which will take you to
 https://verilator.org/guide/latest/install.html[].
@@ -73,6 +80,9 @@ on that page, "Package Manager Quick Install", namely to use Ubuntu's
 standard `apt-get install` or `apt install` mechanism.  This usually
 installs a somewhat older version of Verilator than the latest, but
 that is usually fine.
+
+The main Verilator page (link given above) also has a link to download
+the Verilator user manual: link:https://verilator.org/verilator_doc.pdf[(PDF)]
 
 === If you want to install a later version of Verilator ...
 

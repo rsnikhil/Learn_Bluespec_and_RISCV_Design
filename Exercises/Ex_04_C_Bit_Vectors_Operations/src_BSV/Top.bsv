@@ -1,7 +1,3 @@
-// Build-and-run this program
-// Try variations: change bit-widths and values of a and b
-// Try variations: change all Bit #(n) to Int #(n)
-
 function Action print_BV_BV_Bool (String op, Bit #(4) a, Bit #(4) b, Bool result);
    $display ("  %s: %04b %04b => %d or ", op, a, b, result, fshow (result));
 endfunction

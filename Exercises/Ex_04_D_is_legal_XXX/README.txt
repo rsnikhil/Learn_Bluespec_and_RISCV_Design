@@ -34,3 +34,5 @@ specification document, which lists 40 RV32I instructions).
 
 A visual check is sufficient, but feel free to write a testbench and
 tests and run them if you feel inspired to do so.
+
+// ----------------------------------------------------------------
