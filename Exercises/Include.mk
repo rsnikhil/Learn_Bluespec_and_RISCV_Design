@@ -14,7 +14,7 @@ v_all:	 v_compile  v_link  v_sim
 TOPFILE   ?= src_BSV/Top.bsv
 TOPMODULE ?= mkTop
 
-BSCFLAGS = -use-dpi -keep-fires  -elab
+BSCFLAGS = -D RV32 -use-dpi -keep-fires  -elab
 
 # Other flags of interest
 #	-opt-undetermined-vals \
