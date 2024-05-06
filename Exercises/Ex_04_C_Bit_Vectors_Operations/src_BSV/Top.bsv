@@ -5,7 +5,7 @@ endfunction
 // Note 'result' argument is polymorphic in bit-width
 function Action print_BV_BV (String op, Bit #(4) b, Bit #(n) result);
    $display ("  %s: %04b => %d or 0x%h", op, b, result, result);
-   endfunction
+endfunction
 
 function Action print_BV_BV_BV (String op, Bit #(4) a, Bit #(4) b, Bit #(4) result);
    $display ("  %s: %04b %04b => %d or 0x%0h", op, a, b, result, result);
@@ -15,7 +15,7 @@ endfunction
 module mkTop (Empty);
 
    rule rl_once;
-      Bit #(4) a = 'b_1010;    // use -5 for Int
+      Bit #(4) a = 'b_1010;    // use '-5' for Int #(4)
       Bit #(4) b = 'b_0110;
 
       $display ("Some bitwise arithmetic ops");
