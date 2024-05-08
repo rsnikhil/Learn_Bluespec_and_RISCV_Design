@@ -5,7 +5,7 @@ module mkTop (Empty);
    Bit #(32) pc_val = 32'h_8000_1000;
    // Bit #(32) pc_val;
    // Bit #(32) pc_val = ?;
-   // Bit #(32) pc_val = 32'h_1_8000_1000;
+   // Bit #(32) pc_val = 33'h_1_8000_1000;
    // Bit #(32) pc_val = 4096;
    // Bit #(32) pc_val = 'h_1000;
 

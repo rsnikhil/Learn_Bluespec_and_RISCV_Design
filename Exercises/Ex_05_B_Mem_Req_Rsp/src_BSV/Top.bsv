@@ -60,7 +60,6 @@ module mkTop (Empty);
 				   instr:    ?};
 	    f_reqs.enq (mem_req);
 	    $display ("mem_req: ", fshow_Mem_Req (mem_req));
-	    $display ("mem_req: ", fshow_Mem_Req (mem_req));
 	 endaction
 
 	 action // a_rsp
