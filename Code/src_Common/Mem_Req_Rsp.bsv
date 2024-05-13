@@ -13,7 +13,9 @@ import Instr_Bits :: *;
 
 // See Instr_Bits for funct5 codes for LOAD/STORE/AMOs
 // (we use original funct5s for AMOs, and add two more codes for LOAD/STORE)
+
 typedef Bit #(5) Mem_Req_Type;
+
 
 function Fmt fshow_Mem_Req_Type (Mem_Req_Type mrt);
    return case (mrt)
@@ -48,7 +50,7 @@ typedef struct {Mem_Req_Type  req_type;
 		Bit #(XLEN)   pc;       // for debugging only
 		Bit #(32)     instr;
 } Mem_Req
-deriving (Eq, FShow, Bits);
+deriving (FShow, Bits);
 
 // ****************************************************************
 // Memory responses
@@ -74,7 +76,7 @@ typedef struct {Mem_Rsp_Type  rsp_type;
 		Bit #(XLEN)   pc;       // for debugging only
 		Bit #(32)     instr;
 } Mem_Rsp
-deriving (Eq, FShow, Bits);
+deriving (FShow, Bits);
 
 // ****************************************************************
 // Alternate fshow functions

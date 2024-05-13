@@ -79,14 +79,10 @@ memory-and-MMIO system is implemented mostly in C code (not BSV), in
 
 == Prerequisites and one-time steps
 
-Install some free and open-source tools:
-
-* Install the _bsc_ compiler, to generate Verilog from BSV source
-  code.  See https://github.com/B-Lang-org/bsc[].
-
-* Install the Verilator tool, needed to build a simulation executable
-  from the _bsc_-generated Verilog.  See
-  https://www.veripool.org/verilator[].
+Install some free and open-source tools, in particular the _bsc_
+compiler (BSV-to-Verilog) and the Verilator compiler
+(Verilog-to-simulator).  This link:Platform_Setup_Guide.html[Platform
+Setup Guide] provides guidance.
 
 [NOTE]
 ====
@@ -296,13 +292,6 @@ The "Fredir" at the end of instruction 15 (BNE) shows a redirection of
 the Fetch unit due to the Branch being taken.  The "RET.discard" at
 the end of instruction 16 (JAL) shows it being discarded due to
 misprediction (fall-through from BNE when BNE was taken).
-
-[NOTE]
-====
-* The Python program is an early draft (flaky, inefficient) and will be improved.
-* The Python program can select a restricted range of instructions,
-  instead of the full `log.txt`.
-====
 
 // ****************************************************************
 == Alternative Simulators and Synthesis for FPGA

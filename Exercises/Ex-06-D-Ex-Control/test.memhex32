@@ -1,0 +1,28 @@
+// This is a 'memhex32' file
+// i.e., for a memory that is an array of 32-bit (4-byte) words.
+
+// An item beginning with '@' is a word index (not a byte-address!)
+// The corresponding byte address is shown as a comment to the right.
+
+@20000000    // ---- 80000000
+
+// Each data item is a 32-bit word.
+// Its byte address is shown as a comment to the right.
+
+
+800f0137     // 80000000
+00012023     // 80000004
+fe012e23     // 80000008
+00006437     // 8000000c
+00a40413     // 80000010
+30041073     // 80000014
+800f0437     // 80000018
+0c042023     // 8000001c
+30541073     // 80000020
+00008317     // 80000024
+e4c30313     // 80000028
+00008397     // 8000002c
+e9838393     // 80000030
+00032023     // 80000034
+00430313     // 80000038
+fe731ce3     // 8000003c

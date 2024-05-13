@@ -57,10 +57,7 @@ C_FILES  = $(REPO)/src_Top/C_Mems_Devices.c
 C_FILES += $(REPO)/src_Top/UART_model.c
 
 # Only needed if we import C code
-BSC_C_FLAGS += \
-	-Xc++  -D_GLIBCXX_USE_CXX11_ABI=0 \
-	-Xl -v \
-	-Xc -O3 -Xc++ -O3
+BSC_C_FLAGS += -Xl -v  -Xc -O3  -Xc++ -O3
 
 ifdef DRUM_RULES
 BSCFLAGS += -D DRUM_RULES

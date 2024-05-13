@@ -32,7 +32,7 @@ Integer verbosity = 0;
 function ActionValue #(EX_Control_to_Retire)
          fn_EX_Control (RR_to_EX_Control  x,
 			File              flog);
-                                                            // \elide
+
    actionvalue
       let instr   = x.instr;
       let rs1_val = x.rs1_val;

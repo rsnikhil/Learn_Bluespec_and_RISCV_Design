@@ -37,12 +37,11 @@ deriving (Bits, FShow);
 // ================================================================
 // Decode => Register Read
 
-typedef enum {OPCLASS_SYSTEM,
+typedef enum {OPCLASS_SYSTEM,     // EBREAK, ECALL, CSRRxx
               OPCLASS_CONTROL,    // BRANCH, JAL, JALR
 	      OPCLASS_INT,
 	      OPCLASS_MEM,        // LOAD, STORE, AMO
 	      OPCLASS_FENCE}      // FENCE
-
 OpClass
 deriving (Bits, Eq, FShow);
 
@@ -219,13 +218,13 @@ function Fmt fshow_Decode_to_RR (Decode_to_RR x);
    f = f + $format (" instr:%08h", x.instr);
    f = f + $format (" pred:%08h epoch:%0d\n", x.predicted_pc, x.epoch);
    f = f + $format ("            ");
-   f = f + $format ("fallthru:%08h", x.fallthru_pc);
+   f = f + $format ("fallthru:%08h ", x.fallthru_pc);
    if (x.exception) begin
-      f = f + $format (" ", fshow_cause (x.cause));
+      f = f + fshow_cause (x.cause);
       f = f + $format (" tval:%0h", x.tval);
    end
    else begin
-      f = f + $format (fshow (x.opclass));
+      f = f + fshow (x.opclass);
       f = f + $format (" has_{rs1,rs2,rd}:{%0d,%0d,%0d} writes_mem:%0d, imm:%0h",
 		       x.has_rs1, x.has_rs2, x.has_rd, x.writes_mem, x.imm);
    end

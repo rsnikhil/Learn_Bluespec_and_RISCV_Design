@@ -24,11 +24,10 @@ import Inter_Stage :: *;
 // Fetch: Functionality
 
 typedef struct {
-   Fetch_to_Decode   to_D;
-   Mem_Req  mem_req;
+   Fetch_to_Decode  to_D;
+   Mem_Req          mem_req;
 } Result_F
 deriving (Bits, FShow);
-
 
 // This is actually a pure function; is ActionValue only to allow
 // $display insertion for debugging

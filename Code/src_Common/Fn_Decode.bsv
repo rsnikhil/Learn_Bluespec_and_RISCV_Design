@@ -29,7 +29,7 @@ function ActionValue #(Decode_to_RR)
          fn_Decode (Fetch_to_Decode  x_F_to_D,
 		    Mem_Rsp          rsp_IMem,
 
-		    File    flog);
+		    File             flog);
    actionvalue
       Bit #(32) instr = truncate (rsp_IMem.data);
       Bit #(5)  rd    = instr_rd (instr);
