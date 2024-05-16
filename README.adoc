@@ -1,7 +1,7 @@
 = Learn Bluespec and RISC-V Design
 (c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
 :revnumber: v0.971
-:revdate: 2024-04-30.A
+:revdate: 2024-05-15.A
 :sectnums:
 :toc:
 :toclevels: 3
@@ -87,7 +87,10 @@ have already been covered with *Drum*.
 We interleave RISC-V and BSV topics in an incremental and mutually
 reinforcing way, and describe the full design and verification process
 and the code in detail.  We hope to avoid steep learning curves for
-BSV and for RISC-V.
+BSV and for RISC-V.  This diagram shows the interplay between BSV and
+RISC-V chapters:
+
+image::Doc/Figures/Fig_Chapter_Roadmap.png[align="center"]
 
 The exercises in `Exercises/` are synchronized with the Book, in which
 there are small sections titled **Exercises**, each pointing to a
@@ -127,7 +130,7 @@ explores "Why BSV?" in more detail.
 
 // ****************************************************************
 
-== Status (as of April 30, 2024)
+== Status (as of May 15, 2024)
 
 * *Book*: complete except for last two chapters: suggestions for
   future study of RISC-V and future study of BSV.
