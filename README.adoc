@@ -1,7 +1,7 @@
 = Learn Bluespec and RISC-V Design
 (c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
 :revnumber: v0.971
-:revdate: 2024-05-15.A
+:revdate: 2024-05-26.A
 :sectnums:
 :toc:
 :toclevels: 3
@@ -39,14 +39,14 @@ Outline of repository contents:
 └── Exercises
 ----
 
-`Book_BLang_RISCV.pdf`: Textbook (about 300 pages).
+`Book_BLang_RISCV.pdf`: Textbook (about 320 pages).
 
 `Code/`: Full source codes for Drum and Fife, along with Makefiles to
 build and run (Verilog simulation).  `Build_and_Run_Guide.adoc`
 explains how to compile and run, using free and open-source tools
 (_bsc_ compiler to compile BSV to Verilog, and _Verilator_ to simulate
-the Verilog).  [Coming soon: separate documentation on how to run Drum
-and Fife on FPGAs on Amazon AWS F1 instances.]
+the Verilog).  [Coming: separate documentation on how to run Drum and
+Fife on FPGAs on Amazon AWS F1 instances.]
 
 `Slides/`: Lecture slides.
 
@@ -130,9 +130,9 @@ explores "Why BSV?" in more detail.
 
 // ****************************************************************
 
-== Status (as of May 15, 2024)
+== Status (as of May 26, 2024)
 
-* *Book*: complete except for last two chapters: suggestions for
+* *Book*: complete except for last two chapters on suggestions for
   future study of RISC-V and future study of BSV.
 
 * *Code*: Drum and Fife codes complete.
