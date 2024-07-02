@@ -1,7 +1,7 @@
 = Learn Bluespec and RISC-V Design
 (c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
-:revnumber: v0.971
-:revdate: 2024-05-26.A
+:revnumber: v0.972
+:revdate: 2024-07-02.A
 :sectnums:
 :toc:
 :toclevels: 3
@@ -48,9 +48,9 @@ explains how to compile and run, using free and open-source tools
 the Verilog).  [Coming: separate documentation on how to run Drum and
 Fife on FPGAs on Amazon AWS F1 instances.]
 
-`Slides/`: Lecture slides.
+`Slides/`: Lecture slides for Chapters 1-18
 
-`Exercises/`: Suggested exercises for labs/homeworks.
+`Exercises/`: Code for exercises in book appendix ``Exercises''
 
 // ****************************************************************
 
@@ -126,26 +126,27 @@ Language), a significant improvement in expressive power and
 simplicity compared to Verilog/SystemVerilog/VHDL.  Its free,
 open-source compiler is available at:
 link:https://github.com/B-Lang-org/bsc[].  An appendix in the book
-explores "Why BSV?" in more detail.
+discusses "Why BSV?" in more detail.
 
 // ****************************************************************
 
-== Status (as of May 26, 2024)
+== Status (as of July 2, 2024)
 
-* *Book*: complete except for last two chapters on suggestions for
-  future study of RISC-V and future study of BSV.
+* *Book*: complete except for the final two chapters (19, 20) which
+  contain suggestions for future study of BSV and future study of
+  RISC-V, respectively.
 
 * *Code*: Drum and Fife codes complete.
 
 * *Slides* (for lectures): In progress; expected completion by end of
-  June 2024.
+  July 2024.
 
 * *Exercises* (for labs): In progress; expected completion by end of
-  June 2024.
+  July 2024.
 
 This repository is expected to be updated frequently through the end
-of June 2024 as we complete the few remaining materials.  If you clone
-it, you may wish to keep track of commit/date so you can revert if
-needed.
+of July 2024 as we complete the few remaining materials.  When you
+clone it, you may wish to keep track of commit/date so you can revert
+to that version if needed.
 
 // ****************************************************************
