@@ -41,6 +41,20 @@ Outline of repository contents:
 
 `Book_BLang_RISCV.pdf`: Textbook (about 320 pages).
 
+[WARNING]
+====
+
+Apparently the PDF does not render correctly on GitHub in some
+browsers ("Error rendering embedded code; Invalid PDF"), e.g.,
+DuckDuckGo on MacOS Ventura).
+
+It does render correctly in other browsers (e.g., Safari and Firefox on MacOS Ventura).
+
+It does render correctly if you download it use a PDF viewer (e.g., Preview on MacOS Ventura).
+
+====
+
+
 `Code/`: Full source codes for Drum and Fife, along with Makefiles to
 build and run (Verilog simulation).  `Build_and_Run_Guide.adoc`
 explains how to compile and run, using free and open-source tools
