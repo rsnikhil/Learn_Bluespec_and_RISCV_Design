@@ -738,10 +738,13 @@ void c_mems_devices_req_rsp (uint8_t        *result_p,
 
 		if (rg_tohost != tohost_val) {
 		    uint32_t testnum = (tohost_val >> 1);
-		    if (testnum == 0)
+		    if (testnum == 0) {
 			fprintf (stdout, "\nGPIO tohost PASS\n");
+                        exit(0);
+                    }
 		    else {
 			fprintf (stdout, "\nGPIO tohost FAIL on testnum %0d\n", testnum);
+                        exit(1);
 		    }
 		    rg_tohost = tohost_val;
 		}
