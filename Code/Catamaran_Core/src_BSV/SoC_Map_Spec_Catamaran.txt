@@ -1,0 +1,11 @@
+// SoC_Map for Fife/Drum on Catamaran
+
+VAL pc_reset_value      8000_0000
+VAL mtvec_reset_value        1000
+
+
+IO  near_mem_io       0200_0000    0001_0000    // 64KiB
+IO  uart16550_0       6010_0000    0000_1000    // 4KiB
+IO  gpio              6FFF_0000    0001_0000    // 64K
+
+MEM ddr4_0_cached     8000_0000    8000_0000    // 2GiB

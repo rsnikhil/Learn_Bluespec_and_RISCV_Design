@@ -1,0 +1,26 @@
+{
+  // Name of the vendored-in project
+  name: "bluespec_AMBA_Fabrics",
+
+  // Target directory: typically equal to the name
+  // All imported code is copied into this directory
+  target_dir: "bluespec_AMBA_Fabrics",
+
+  // Git upstream source code repository
+  upstream: {
+    // Upstream Git repository URL. HTTPS URLs are preferred.
+    url: "https://github.com/bluespec/AMBA_Fabrics",
+    // Upstream revision or branch. Can be a commit hash or a branch name.
+    rev: "master",
+  },
+
+  // Optional: Pick specific files or subdirectories from upstream and
+  // specify where to put them.
+  mapping: [
+    {from: 'AXI4/AXI4_Types.bsv',              to: 'AXI4_Types.bsv'},
+    {from: 'AXI4/AXI4_Fabric.bsv',             to: 'AXI4_Fabric.bsv'},
+    {from: 'AXI4/AXI4_ClockCrossing.bsv',      to: 'AXI4_ClockCrossing.bsv'},
+    {from: 'AXI4/AXI4_Extra_Xactors.bsv',      to: 'AXI4_Extra_Xactors.bsv'},
+    {from: 'AXI4_Lite/AXI4_Lite_Types.bsv',    to: 'AXI4_Lite_Types.bsv'},
+  ]
+}

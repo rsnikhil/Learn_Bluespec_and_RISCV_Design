@@ -393,6 +393,8 @@ module mkCPU (CPU_IFC);
 
       rg_pc      <= initial_params.pc_reset_value;
       rg_running <= True;
+      $display ("%s: starting execution at PC %0h",
+		cpu_name, initial_params.pc_reset_value);
    endmethod
 
    // IMem

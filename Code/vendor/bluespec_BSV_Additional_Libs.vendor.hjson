@@ -2,7 +2,7 @@
   // Name of the vendored-in project
   name: "bluespec_BSV_Additional_Libs",
 
-  // Target directory
+  // Target directory: typically equal to the name
   // All imported code is copied into this directory
   target_dir: "bluespec_BSV_Additional_Libs",
 
@@ -14,10 +14,13 @@
     rev: "master",
   },
 
-  // Pick specific files or subdirectories from upstream and
+  // Optional: Pick specific files or subdirectories from upstream and
   // specify where to put them.
   mapping: [
-    {from:'src/Cur_Cycle.bsv',        to: 'Cur_Cycle.bsv'},
-    {from:'src/Semi_FIFOF.bsv',       to: 'Semi_FIFOF.bsv'},
+    {from: 'src/Cur_Cycle.bsv',     to: 'Cur_Cycle.bsv'},
+    {from: 'src/GetPut_Aux.bsv',    to: 'GetPut_Aux.bsv'},
+    {from: 'src/Semi_FIFOF.bsv',    to: 'Semi_FIFOF.bsv'},
+    {from: 'src/EdgeFIFOFs.bsv',    to: 'EdgeFIFOFs.bsv'},
+    {from: 'src/ByteLane.bsv',      to: 'ByteLane.bsv'},
   ]
 }

@@ -1,0 +1,22 @@
+{
+  // Name of the vendored-in project
+  name: "bluespec_RISCV_Debug_Module",
+
+  // Target directory: typically equal to the name
+  // All imported code is copied into this directory
+  target_dir: "bluespec_RISCV_Debug_Module",
+
+  // Git upstream source code repository
+  upstream: {
+    // Upstream Git repository URL. HTTPS URLs are preferred.
+    url: "https://github.com/bluespec/RISCV_Debug_Module",
+    // Upstream revision or branch. Can be a commit hash or a branch name.
+    rev: "main",
+  },
+
+  // Optional: Pick specific files or subdirectories from upstream and
+  // specify where to put them.
+  mapping: [
+    {from: 'src',                 to: '.'},
+  ]
+}

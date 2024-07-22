@@ -39,7 +39,7 @@ function Fmt fshow_Mem_Req_Type (Mem_Req_Type mrt);
 endfunction
 
 typedef enum {MEM_1B, MEM_2B, MEM_4B, MEM_8B} Mem_Req_Size
-deriving (Eq, FShow, Bits);
+deriving (Bits, FShow, Eq);
 
 typedef struct {Mem_Req_Type  req_type;
 		Mem_Req_Size  size;
@@ -50,7 +50,7 @@ typedef struct {Mem_Req_Type  req_type;
 		Bit #(XLEN)   pc;       // for debugging only
 		Bit #(32)     instr;
 } Mem_Req
-deriving (FShow, Bits);
+deriving (Bits, FShow);
 
 // ****************************************************************
 // Memory responses
@@ -62,7 +62,7 @@ typedef enum {MEM_RSP_OK,
 	      MEM_REQ_DEFERRED    // DMem only, for accesses that must be non-speculative
 
 } Mem_Rsp_Type
-deriving (Eq, FShow, Bits);
+deriving (Bits, FShow, Eq);
 
 typedef struct {Mem_Rsp_Type  rsp_type;
 		Bit #(64)     data;      // mem => CPU data
@@ -76,7 +76,7 @@ typedef struct {Mem_Rsp_Type  rsp_type;
 		Bit #(XLEN)   pc;       // for debugging only
 		Bit #(32)     instr;
 } Mem_Rsp
-deriving (FShow, Bits);
+deriving (Bits, FShow);
 
 // ****************************************************************
 // Alternate fshow functions

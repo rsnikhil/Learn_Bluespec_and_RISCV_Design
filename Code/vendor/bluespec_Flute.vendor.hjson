@@ -1,0 +1,23 @@
+{
+  // Name of the vendored-in project
+  name: "bluespec_Flute",
+
+  // Target directory: typically equal to the name
+  // All imported code is copied into this directory
+  target_dir: "bluespec_Flute",
+
+  // Git upstream source code repository
+  upstream: {
+    // Upstream Git repository URL. HTTPS URLs are preferred.
+    url: "https://github.com/bluespec/Flute",
+    // Upstream revision or branch. Can be a commit hash or a branch name.
+    rev: "master",
+  },
+
+  // Optional: Pick specific files or subdirectories from upstream and
+  // specify where to put them.
+  mapping: [
+    {from: 'src_Core/ISA/TV_Info.bsv',                   to: 'TV_Info.bsv'},
+    {from: 'src_Core/Near_Mem_IO/Near_Mem_IO_AXI4.bsv',  to: 'Near_Mem_IO_AXI4.bsv'},
+  ]
+}
