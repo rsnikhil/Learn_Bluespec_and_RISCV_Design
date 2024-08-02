@@ -25,6 +25,8 @@ import Inter_Stage :: *;
 typedef struct {
    File        flog;              // Log file
    Bit #(XLEN) pc_reset_value;
+   Bit #(64)   addr_base_mem;
+   Bit #(64)   size_B_mem;
    } Initial_Params
 deriving (Bits);
 

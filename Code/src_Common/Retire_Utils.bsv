@@ -103,8 +103,7 @@ function Action log_Retire_DMem (File flog, Bool exc, RR_to_Retire x, Mem_Rsp x2
 	 ftrace (flog, x.inum, x.pc, x.instr, "RET.D", $format (""));
 	 wr_log (flog, $format ("CPU.Retire_EX_DMem: Normal"));
       end
-      Bool show_data = ((x2.req_type != funct5_LOAD)
-			&& (x2.req_type != funct5_LR)
+      Bool show_data = ((x2.req_type != funct5_STORE)
 			&& (x2.req_type != funct5_FENCE));
       wr_log_cont (flog, $format ("    ", fshow_Mem_Rsp (x2, show_data)));
    endaction
@@ -133,8 +132,7 @@ function Action log_DMem_NS_rsp (File          flog,
 	 ftrace (flog, x.inum, x.pc, x.instr, "RET.Drsp", $format (""));
 	 wr_log (flog, $format ("CPU.Retire_DMem_NS_rsp: Normal"));
       end
-      Bool show_data = ((mem_rsp.req_type != funct5_LOAD)
-			&& (mem_rsp.req_type != funct5_LR)
+      Bool show_data = ((mem_rsp.req_type != funct5_STORE)
 			&& (mem_rsp.req_type != funct5_FENCE));
       wr_log_cont (flog, $format ("    ", fshow_Mem_Rsp (mem_rsp, show_data)));
    endaction

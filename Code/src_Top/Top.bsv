@@ -74,7 +74,9 @@ module mkTop (Empty);
    // Initialize modules
    rule rl_step1 (rg_top_step == 1);
       let init_params = Initial_Params {flog:           rg_logfile,
-					pc_reset_value: 'h_8000_0000};
+					pc_reset_value: 'h_8000_0000,
+					addr_base_mem:  'h_8000_0000,
+					size_B_mem:     'h_1000_0000};
       cpu.init (init_params);
       mems_devices.init (init_params);
 

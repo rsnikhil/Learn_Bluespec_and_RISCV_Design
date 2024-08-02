@@ -4,6 +4,15 @@
 // ****************************************************************
 // Imported C functions for a memory-model
 
+// Current:
+//   Version 2 (without store-buffer, which has moved up into BSV)
+
+// Historical:
+//   Version 1 (with store-buffer)
+//     commit 12beee5f000439504c1e46e63238329584ea5589
+//     Date:   Thu Jul 25 12:09:53 2024 -0400
+//     copy at: Git_Aux/Fife/ATTIC/2024-07-29_C_Mems_Devices.c)
+
 // ****************************************************************
 // Includes from C lib
 
@@ -19,6 +28,17 @@
 // Local includes
 
 #include "UART_model.h"
+
+// ****************************************************************
+// Debugging message control
+
+static int verbosity_wild = 1;
+static int verbosity_mem  = 0;
+static int verbosity_MMIO = 0;
+
+// ****************************************************************
+
+#define minimum(x,y) (((x) <= (y)) ? (x) : (y))
 
 // ****************************************************************
 // WARNING: THESE CODES SHOULD BE IDENTICAL TO THOSE IN Mem_Req_Rsp.bsv
@@ -66,13 +86,18 @@
 #define CLIENT_DMEM  1
 #define CLIENT_MMIO  2
 
-// ****************************************************************
-
-#define minimum(x,y) (((x) <= (y)) ? (x) : (y))
-
-static int verbosity_wild = 0;
-static int verbosity_mem  = 0;
-static int verbosity_MMIO = 0;
+static
+void fprintf_client (FILE *fp, const char *pre, const uint32_t client, const char *post)
+{
+    fprintf (fp, "%s", pre);
+    switch (client) {
+    case CLIENT_IMEM: fprintf (fp, "CLIENT_IMEM"); break;
+    case CLIENT_DMEM: fprintf (fp, "CLIENT_DMEM"); break;
+    case CLIENT_MMIO: fprintf (fp, "CLIENT_MMIO"); break;
+    default:          fprintf (fp, "<client %0d>", client); break;
+    }
+    fprintf (fp, "%s", post);
+}
 
 // ****************************************************************
 // System address map and components
@@ -213,7 +238,7 @@ void load_memhex32 (int verbosity)
     else {
 	memhex_filename = default_memhex_filename;
 	fprintf (stdout, "Loading memhex file %s\n", memhex_filename);
-	fprintf (stdout, "    (default file---no env variable MEMHEX32_FILE)\n");
+	fprintf (stdout, "    (default file---no env variable MEMHEX32)\n");
     }
 
     FILE *fp = fopen (memhex_filename, "r");
@@ -260,101 +285,8 @@ void load_memhex32 (int verbosity)
 }
 
 // ================================================================
-// Store buffer
-// Updates to memory are buffered here until committed/discarded.
-//    (discards are due to speculation in the CPU pipeline).
-// When committed, they are performed in memory.
-
-typedef struct {
-    uint64_t  inum;
-    uint8_t   size_B;
-    uint64_t  addr;
-    uint64_t  data;
-} Store_Buf_Entry;
-
-#define STORE_BUF_CAPACITY 8
-
-static Store_Buf_Entry store_buf [STORE_BUF_CAPACITY];
-static int sb_hd   = 0;
-static int sb_size = 0;
-
-static
-void fprintf_Store_Buf_Entry (FILE *fout,
-			      const char            *pre,
-			      const int              sb_index,
-			      const Store_Buf_Entry *sbe_p,
-			      const char            *post)
-{
-    fprintf (fout, "%s", pre);
-    fprintf (fout, "store_buf[%0d]:{", sb_index);
-    fprintf (fout, "I_%0" PRId64,      sbe_p->inum);
-    fprintf (fout, " size_B:%0d",      sbe_p->size_B);
-    fprintf (fout, " addr:%0" PRIx64,  sbe_p->addr);
-    fprintf (fout, " data:%08" PRIx64, sbe_p->data);
-    fprintf (fout, "}");
-    fprintf (fout, "%s", post);
-}
-
-static
-void fprintf_Store_Buf (FILE *fout)
-{
-    fprintf (fout, "  Store Buffer: sb_hd:%0d sb_size:%0d\n", sb_hd, sb_size);
-    for (int j = 0; j < sb_size; j++) {
-	int ix = (sb_hd + j) % STORE_BUF_CAPACITY;
-	fprintf_Store_Buf_Entry (fout, "    ", ix, & (store_buf [ix]), "\n");
-    }
-}
-
-// ----------------
-// Load from mem, and incorporate any pending updates from store-buffer
-
-static
-uint64_t c_load_w_sb (const uint32_t  x_size_B, const uint64_t  x_addr)
-{
-    // Note: assume range (addr, addr+size_B-1) is fully in-bounds in memory
-
-    // x will be final result
-    uint64_t  x  = 0;
-    uint8_t  *px = (uint8_t *) (& x);
-    // Baseline: value from memory
-    memcpy (px, & (mem_array [x_addr - ADDR_BASE_MEM]), x_size_B);
-
-    // Scan store-buffer oldest to newest, incorporating newer values (if any) into x
-    for (int j = 0; j < sb_size; j++) {
-	int ix = (sb_hd + j) % STORE_BUF_CAPACITY;
-	const uint64_t sb_addr    = store_buf [ix].addr;
-	const uint64_t sb_size_B  = store_buf [ix].size_B;
-
-	// Compute overlap of n bytes, if any
-	// If overlap (n > 0), jx is offset in x, jsb is offset in sb data
-	int jx, jsb, n;
-	if (x_addr <= sb_addr) {
-	    jx  = sb_addr - x_addr;
-	    jsb = 0;
-	    if (jx >= x_size_B)
-		n = 0;
-	    else
-		n = minimum (sb_size_B, (x_size_B - jx));
-	}
-	else {
-	    jx  = 0;
-	    jsb = x_addr - sb_addr;
-	    if (x_addr >= sb_addr + sb_size_B)
-		n = 0;
-	    else
-		n = minimum (sb_size_B - jsb, x_size_B);
-	}
-	// If any overlap, copy newer bytes into x
-	if (n > 0) {
-	    uint8_t *psb = (uint8_t *) & store_buf [ix].data;
-	    memcpy (px + jx, psb + jsb, n);
-	}
-    }
-    return x;
-}
-
-// ================================================================
 // Access memory
+// (already checked that addr range is in-mem)
 
 static
 void c_access_mem (uint8_t        *result_p,
@@ -374,33 +306,19 @@ void c_access_mem (uint8_t        *result_p,
     uint8_t *mem_ptr = & (mem_array [addr - ADDR_BASE_MEM]);
 
     if (req_type == funct5_LOAD) {
-	// Load data from memory and store-buffer
-	uint64_t x = c_load_w_sb (size_B, addr);
+	// rdata <= mem []
 	uint8_t *rdata_p = & (result_p [4]);
-	memcpy (rdata_p, & x, 8);
+	memcpy (rdata_p, mem_ptr, 8);
 
 	if (verbosity != 0)
 	    fprint_data (stdout, "    => rdata ", size_B, rdata_p, "\n");
     }
     else if (req_type == funct5_STORE) {
-	// Add this to the store-buffer
-	if (sb_size >= STORE_BUF_CAPACITY) {
-	    fprintf (stdout, "INTERNAL ERROR: %s: store-buffer overflow\n", __FUNCTION__);
-	    fprintf (stdout, "    STORE_BUF_CAPACITY = %0d)\n", STORE_BUF_CAPACITY);
-	    fprintf_Store_Buf (stdout);
-	    exit (1);
-	}
-	int ix = (sb_hd + sb_size) % STORE_BUF_CAPACITY;
-	store_buf [ix].inum   = inum;
-	store_buf [ix].size_B = size_B;
-	store_buf [ix].addr   = addr;
-	store_buf [ix].data   = 0;
-	memcpy (& store_buf [ix].data, wdata_p, size_B);
-	sb_size++;
+	// mem [] <= wdata
+	memcpy (mem_ptr, wdata_p, size_B);
 
-	if (verbosity != 0) {
-	    fprintf_Store_Buf_Entry (stdout, "    OK: ", ix, & (store_buf [ix]), "\n");
-	}
+	if (verbosity != 0)
+	    fprint_data (stdout, "    wdata_p <= ", size_B, wdata_p, "\n");
     }
     else {
 	fprintf (stdout, "ERROR: %s: unknown request type", __FUNCTION__);
@@ -467,66 +385,13 @@ void c_mems_devices_init (uint32_t dummy)
     fprintf (stdout, "INFO: %s\n", __FUNCTION__);
     fprint_mems_devices_info (stdout);
 
-    // TODO: load ELF and/or memhex
-    load_memhex32 (0);
+    // TODO: load multiple ELFs/memhex32s
+    const int verbosity = 0;
+    load_memhex32 (verbosity);
 
     // Instantiate UART model
     const uint8_t addr_stride = 4;
     uart_p = mkUART_16550 (ADDR_BASE_UART, addr_stride);
-}
-
-// ================================================================
-// Discharges the head of the store-buffer.
-// 'commit' is 1 to commit (perform the write), 0 to discard
-
-// import "BDPI"
-// function Action c_mems_store_complete (Bit #(64) inum, Bit #(32)  commit);
-
-#ifdef __cplusplus
-// 'C' linkage is necessary for linking with Verilator object files
-extern "C" {
-void c_mems_store_complete (const uint64_t inum,
-			    const uint32_t commit);
-}
-#endif
-
-void c_mems_store_complete (const uint64_t inum,
-			    const uint32_t commit)
-{
-    if (verbosity_mem != 0) {
-	fprintf (stdout, "%s(): I_%0" PRId64 " commit:%0d sb_hd:%0d sb_size:%0d\n",
-		 __FUNCTION__, inum, commit, sb_hd, sb_size);
-	fprintf_Store_Buf (stdout);
-    }
-
-    if (inum < store_buf [sb_hd].inum) {
-	if (verbosity_mem != 0) {
-	    fprintf (stdout, "%s: Ignoring (inum < store_buf [sb_hd].inum)\n",
-		     __FUNCTION__);
-	    fprintf (stdout, "    nothing to commit (e.g., LOAD, LR, failed SC)\n");
-	}
-	return;
-    }
-
-    if (store_buf [sb_hd].inum > inum) {
-	fprintf (stdout, "INTERNAL ERROR: %s: store-buffer tag mismatch\n", __FUNCTION__);
-	fprintf (stdout, "    %0" PRId64 ": arg inum\n", inum);
-	fprintf (stdout, "    %0" PRId64 ": store buffer head inum\n",
-		 store_buf [sb_hd].inum);
-	exit (1);
-    }
-
-    if (commit != 0) {
-	// Performs the write
-	uint8_t *mem_ptr = & (mem_array [store_buf [sb_hd].addr - ADDR_BASE_MEM]);
-	memcpy (mem_ptr, & store_buf [sb_hd].data, store_buf [sb_hd].size_B);
-	if (verbosity_mem != 0) {
-	    fprintf (stdout, "    Stored store-buf %0d\n", sb_hd);
-	}
-    }
-    // Consume the store-buffer entry
-    sb_hd = (sb_hd + 1) % STORE_BUF_CAPACITY;
-    sb_size--;
 }
 
 // ================================================================
@@ -588,51 +453,38 @@ void c_mems_devices_req_rsp (uint8_t        *result_p,
 			  && ((addr + size_B) <= (ADDR_BASE_GPIO + SIZE_B_GPIO)));
 
     if (req_type == funct5_FENCE) {
-	// Defer if speculative
+	// These should only come from CLIENT_MMIO
+	// For speculative accesses, FENCE is directly handled in mkStore_Buffer
+	if (client != CLIENT_MMIO) {
+	    fprintf (stdout, "ERROR: FENCE expecting CLIENT_MMIO");
+	    fprintf_client (stdout, "; got ", client, "\n");
+	    exit (1);
+	}
 	uint32_t *status_p = (uint32_t *) result_p;
-	if (client == CLIENT_DMEM) {
-	    // Defer until retire
-	    if (verbosity_MMIO != 0) {
-		fprintf (stdout, "%s: Deferring FENCE\n", __FUNCTION__);
-		fprint_mem_req (stdout, inum, req_type, size_B, addr, wdata_p);
-	    }
-
-	    // Assert: nothing in store-buffer
-	    if (sb_size != 0) {
-		fprintf (stdout,
-			 "INTERNAL ERROR: %s: store-buffer not empty (has %0d items)\n",
-			 __FUNCTION__, sb_size);
-		exit (1);
-	    }
-	    *status_p = MEM_REQ_DEFERRED;
-	}
-	else {
-	    // No op for now
-	    *status_p = MEM_RSP_OK;
-	}
+	// No op for now
+	*status_p = MEM_RSP_OK;
 	return;
     }
 
     if ((! in_mem) && (! in_UART) && (! in_GPIO)) {
-	if (verbosity_wild != 0) {
-	    fprintf (stdout, "ERROR: c_mem_req(): wild address\n");
-	    fprint_mem_req (stdout, inum, req_type, size_B, addr, wdata_p);
-	}
+	// If speculative (CLIENT_DMEM) defer; else error
 	uint32_t *status_p = (uint32_t *) result_p;
-	*status_p = MEM_RSP_ERR;
+	if (client == CLIENT_DMEM)
+	    *status_p = MEM_REQ_DEFERRED;
+	else {
+	    if (verbosity_wild != 0) {
+		fprintf_client (stdout, "ERROR: c_mem_req(): wild address for ",
+				client, "\n");
+		fprint_mem_req (stdout, inum, req_type, size_B, addr, wdata_p);
+	    }
+	    *status_p = MEM_RSP_ERR;
+	}
 	return;
     }
 
     // Triage to mem/device units based on address
     if (in_mem) {
 	c_access_mem (result_p, inum, req_type, size_B, addr, wdata_p, verbosity_mem);
-
-	if ((client == CLIENT_MMIO)
-	    && (req_type != funct5_LOAD)
-	    && (req_type != funct5_LR)) {
-	    const uint32_t commit = 1;
-	    c_mems_store_complete (inum, commit);
-	}
 	return;
     }
 
@@ -652,25 +504,6 @@ void c_mems_devices_req_rsp (uint8_t        *result_p,
 	    fprintf (stdout, "%s: UART req_type is not LOAD/STORE: %0x\n",
 		     __FUNCTION__, req_type);
 	    *status_p = MEM_RSP_ERR;
-	}
-	else if (client == CLIENT_DMEM) {
-	    // Defer MMIO until retire
-	    if (verbosity_MMIO != 0) {
-		fprintf (stdout, "%s: Deferring UART access\n", __FUNCTION__);
-		fprint_mem_req (stdout, inum, req_type, size_B, addr, wdata_p);
-	    }
-
-	    // Assert: nothing in store-buffer
-	    if (sb_size != 0) {
-		fprintf (stdout,
-			 "INTERNAL ERROR: %s: store-buffer not empty (has %0d items)\n",
-			 __FUNCTION__, sb_size);
-		exit (1);
-	    }
-
-	    *status_p = MEM_REQ_DEFERRED;
-
-	    memcpy (rdata_p, wdata_p, size_B);
 	}
 	else {
 	    if (verbosity_MMIO != 0) {
@@ -701,33 +534,13 @@ void c_mems_devices_req_rsp (uint8_t        *result_p,
 
 	if ((req_type != funct5_LOAD) && (req_type != funct5_STORE)) {
 	    // Only allow LOAD/STORE ops
-	    fprintf (stdout, "%s: UART req_type is not LOAD/STORE: %0x\n",
+	    fprintf (stdout, "%s: GPIO req_type is not LOAD/STORE: %0x\n",
 		     __FUNCTION__, req_type);
 	    *status_p = MEM_RSP_ERR;
 	}
-	else if (client == CLIENT_DMEM) {
-	    // Speculative: defer MMIO until retire
-	    if (verbosity_MMIO != 0) {
-		fprintf (stdout, "%s: Deferring UART access\n", __FUNCTION__);
-		fprint_mem_req (stdout, inum, req_type, size_B, addr, wdata_p);
-	    }
-
-	    // Assert: nothing in store-buffer
-	    if (sb_size != 0) {
-		fprintf (stdout,
-			 "INTERNAL ERROR: %s: store-buffer not empty (has %0d items)\n",
-			 __FUNCTION__, sb_size);
-		exit (1);
-	    }
-
-	    *status_p = MEM_REQ_DEFERRED;
-
-	    memcpy (rdata_p, wdata_p, size_B);
-	}
 	else {
-	    // Non-speculative
 	    if (verbosity_MMIO != 0) {
-		fprintf (stdout, "    Perform UART MMIO\n");
+		fprintf (stdout, "    Perform GPIO\n");
 	    }
 	    uint32_t *p = (uint32_t *) wdata_p;
 	    uint32_t tohost_val = *p;
@@ -740,11 +553,11 @@ void c_mems_devices_req_rsp (uint8_t        *result_p,
 		    uint32_t testnum = (tohost_val >> 1);
 		    if (testnum == 0) {
 			fprintf (stdout, "\nGPIO tohost PASS\n");
-                        exit(0);
-                    }
+			exit(0);
+		    }
 		    else {
 			fprintf (stdout, "\nGPIO tohost FAIL on testnum %0d\n", testnum);
-                        exit(1);
+			exit(1);
 		    }
 		    rg_tohost = tohost_val;
 		}

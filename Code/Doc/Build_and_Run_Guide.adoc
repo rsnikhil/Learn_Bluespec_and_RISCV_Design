@@ -4,6 +4,7 @@
 :revdate: 2024-02-28.A
 :sectnums:
 :THIS_FILE: Build_and_Run_Guide
+:imagesdir: Figs
 :toc:
 :toclevels: 3
 :toc-title: Contents
@@ -133,7 +134,7 @@ $ cd Build/Fife
 === Compile
 
 ----
-$ make compile
+$ make v_compile
 ----
 
 This invokes the _bsc_ compiler to compile BSV source codes into
@@ -160,7 +161,7 @@ synthesizing for FPGA etc.)  In either the `Build/Drum/` or
 `Build/Fife/` directories:
 
 ----
-$ make link
+$ make v_link
 ----
 
 This invokes the Verilator tool and builds a simulation executable,
@@ -170,15 +171,21 @@ This invokes the Verilator tool and builds a simulation executable,
 === Simulate
 
 ----
-$ make run
+$ make v_run
 ----
 
 This runs the executable, which first loads a file `test.memhex32` for
 the initial contents of RISC-V memory, and then runs the loaded RISC-V
-program.  During the run, it outputs the text file `log.txt` with a
-log of steps in each instruction.
+program.
 
-Execution never stops: please type `^C` to halt the simulation.
+Normally, execution never stops: please type `^C` to halt the
+simulation.
+
+Special case for the standard RISC-V ISA tests such as `rv32ui-p-add`
+(described in the next section): these tests write a SUCCESS/FAIL code
+to a memory location called `tohost`.  The simulator is set up to exit
+automatically when this happens (this is useful for scripting to run
+all ISA tests).
 
 The `Build/Drum` and `Build/Fife` directories have symbolic links from
 `test.memhex32` to
@@ -186,10 +193,11 @@ The `Build/Drum` and `Build/Fife` directories have symbolic links from
 run out-of-the-box.  Please replace `test.memhex32` to run other
 RISC-V programs.
 
-WARNING: `log.txt` can be large, depending on how long you run the
-         simulation.  In the near future we will likely switch off
-         logging by default; you will have to request it explicitly to
-         obtain a log.
+When invoking the simulation executable, if you provide the
+command-line argument `+log`, then it will also write out a log file
+`log.txt` with detailed instruction-by-instruction information.
+
+WARNING: `log.txt` can be large, depending on how long you run the simulation.
 
 // ================================================================
 === The `test.memhex32` file (initial contents of RISC-V memory)
@@ -279,7 +287,7 @@ ticks).
 The following is screenshot of the display for the first 16
 instructions of "Hello World!":
 
-image::Pipeline_Viz_Hello.png[align="center", width=1000]
+image::IMG_Pipeline_Viz_Hello.png[align="center", width=1000]
 
 Reading each line from left-to-right we can see the steps/stages for
 each instrution (Fetch, Decode, RegisterRead, EXecute, Retire,
@@ -314,8 +322,13 @@ The generated Verilog uses `import "DPI-C"` to link-in the C files
 `mkCPU.v` and connect it to your own memory system.
 
 * The _bsc_ compiler can generate a standalone ("Bluesim") simulation
-  executable (no need for a Verilog simulator).  Please see the _bsc_
-  User Guide for details on how to do this.
+  executable (no need for a Verilog simulator).
++
+Doing `make b_compile b_link b_run` (instead of `v_compile v_link
+v_run`) will create a Bluesim simulation executable instead of a
+Verilator simulation executable, and run it.
++
+Please see the _bsc_ User Guide for details about this build flow.
 
 * The Verilog produced by `make compile` in the `verilog/` directory
   is ready for processing through FPGA or ASIC synthesis tools.  You

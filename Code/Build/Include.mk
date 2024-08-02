@@ -17,8 +17,8 @@ help:
 	@echo "                           Then, load the CSV file into any spreadsheet"
 	@echo "                           such as: Excel, Numbers, OpenOffice, ...)"
 	@echo ""
-	@echo "  clean"
-	@echo "  full_clean"
+	@echo "  clean                    Remove temporary intermediate files"
+	@echo "  full_clean               Restore to pristine state"
 
 .PHONY: all
 b_all: b_compile b_link b_run_hello
@@ -27,7 +27,7 @@ v_all: v_compile v_link v_run_hello
 # ****************************************************************
 # Config
 
-EXEFILE = exe_$(CPU)_$(RV)
+EXEFILE ?= exe_$(CPU)_$(RV)
 
 # ****************************************************************
 # Common bsc args
@@ -192,6 +192,6 @@ clean:
 
 .PHONY: full_clean
 full_clean: clean
-	rm -r -f  exe_*  verilog  log*
+	rm -r -f  exe_*  verilog  log*  $(REPO)/src_Top/*.o  obj_dir_*
 
 # ****************************************************************

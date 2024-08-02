@@ -151,7 +151,8 @@ function Action log_Dispatch_DMem (File flog, RR_to_Retire x, RR_to_EX y, Mem_Re
    action
       wr_log (flog, $format ("CPU.Dispatch_DMem:"));
       wr_log_cont (flog, $format ("    ", fshow_RR_to_Retire (x)));
-      wr_log_cont (flog, $format ("    ", fshow_RR_to_EX (y)));
+      wr_log_cont (flog, $format ("        rs1_val:%08h  rs2_val:%08h  imm:%08h",
+				  y.rs1_val, y.rs2_val, y.imm));
       wr_log_cont (flog, $format ("    ", fshow_Mem_Req (mem_req)));
       ftrace (flog, x.inum, x.pc, x.instr, "RR.D", $format (""));
    endaction

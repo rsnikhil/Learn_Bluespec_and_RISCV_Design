@@ -96,7 +96,7 @@ function Fmt fshow_Mem_Req (Mem_Req x);
    fmt = fmt + fshow_Mem_Req_Type (x.req_type);
    fmt = fmt + $format (" ");
    fmt = fmt + fshow_Mem_Req_Size (x.size);
-   fmt = fmt + $format (" a:%08h", x.addr);
+   fmt = fmt + $format (" addr:%08h", x.addr);
    if ((x.req_type != funct5_LOAD)
        && (x.req_type != funct5_LR)
        && (x.req_type != funct5_FENCE))
@@ -107,9 +107,13 @@ endfunction
 
 function Fmt fshow_Mem_Rsp (Mem_Rsp x, Bool show_data);
    let fmt = $format ("    Mem_Rsp {I_%0d pc:%08h instr:%08h ", x.inum, x.pc, x.instr);
+   fmt = fmt + fshow_Mem_Req_Type (x.req_type);
+   fmt = fmt + $format (" ");
+   fmt = fmt + fshow_Mem_Req_Size (x.size);
+   fmt = fmt + $format (" addr:%08h ", x.addr);
    fmt = fmt + fshow (x.rsp_type);
    if (show_data)
-      fmt = fmt + $format (" d:%08h", x.data);
+      fmt = fmt + $format (" data:%08h", x.data);
    fmt = fmt + $format ("}");
    return fmt;
 endfunction

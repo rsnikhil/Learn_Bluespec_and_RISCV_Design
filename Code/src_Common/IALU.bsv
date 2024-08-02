@@ -56,8 +56,10 @@ function ActionValue #(Bit #(XLEN))
 	    funct3_SLT:  y_OP = ((iv1 < iv2) ? 1 : 0);
 	    funct3_SLTU: y_OP = ((v1  < v2)  ? 1 : 0);
 	    funct3_XOR:  y_OP = v1 ^ v2;
-	    funct3_SRL:  y_OP = v1 >> shamt;
-	    funct3_SRA:  y_OP = pack (iv1 >> shamt);
+	    funct3_SRL:  // Note: funct3_SRL == funct3_SRA; distinguish on instr [30]
+	                 y_OP = ((instr [30] == 1'b0)
+				 ? v1 >> shamt                // SRL
+				 : pack (iv1 >> shamt));      // SRA
 	    funct3_OR:   y_OP = v1 | v2;
 	    funct3_AND:  y_OP = v1 & v2;
 
@@ -84,8 +86,10 @@ function ActionValue #(Bit #(XLEN))
 	    funct3_ORI:   y_OP_IMM = v1 | imm;
 	    funct3_ANDI:  y_OP_IMM = v1 & imm;
 	    funct3_SLLI:  y_OP_IMM = v1 << shamt;
-	    funct3_SRLI:  y_OP_IMM = v1 >> shamt;
-	    funct3_SRAI:  y_OP_IMM = pack (iv1 >> shamt);
+	    funct3_SRLI:  // Note: funct3_SRLI == funct3_SRAI; distinguish on instr [30]
+	                  y_OP_IMM = ((instr [30] == 1'b0)
+				      ? (v1 >> shamt)          // SRLI
+				      : pack (iv1 >> shamt));  // SRAI
 
 	    default:      implemented = False;    // Debugging
 
