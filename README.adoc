@@ -166,9 +166,9 @@ smoothing and cleanup.
 +
 Tested on ISA tests from
 https://github.com/riscv-software-src/riscv-tests[].  Drum and Fife
-PASS all 39 `rv32mi-p-...` tests, and 10/11 of the `rv32mi-p-...`
+PASS all 39 `rv32ui-p-...` tests, and 10/11 of the `rv32mi-p-...`
 tests (we ignore the 11th test, `rv32mi-p-breakpoint`, because it
-requires Debug Module CSRs which are not currently implented in Drum
+requires Debug Module CSRs which are not currently implemented in Drum
 and Fife).
 
 * *Slides* (for lectures): complete.
