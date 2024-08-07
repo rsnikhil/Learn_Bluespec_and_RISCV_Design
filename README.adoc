@@ -1,7 +1,7 @@
 = Learn Bluespec and RISC-V Design
 (c) Rishiyur S. Nikhil, Bluespec, Inc. 2024
-:revnumber: v0.975
-:revdate: 2024-07-05.A
+:revnumber: v0.980
+:revdate: 2024-08-07.A
 :sectnums:
 :toc:
 :toclevels: 3
@@ -9,6 +9,14 @@
 :keywords: Bluespec, B-Lang, BSV, BH, RISC-V, Pipelined CPU, HDL, HLHDL, High Level Hardware Design Language, Fife, Drum
 
 // ****************************************************************
+
+[NOTE]
+====
+Please only submit "Issues", and not PRs, to this repo.  This repo is
+not a development repo, just the place where we assemble
+"distributions" of the book, code, and courseware which are developed
+elsewhere (hence PRs here would not be actionable).
+====
 
 [NOTE]
 ====
@@ -144,7 +152,7 @@ discusses "Why BSV?" in more detail.
 
 // ****************************************************************
 
-== Status (as of July 5, 2024)
+== Status (as of August 7, 2024)
 
 Here, ``complete'' means full first draft.  Once each component is
 complete, we expect a final, complete, careful editing pass for
@@ -155,14 +163,21 @@ smoothing and cleanup.
   RISC-V, respectively.
 
 * *Code*: Drum and Fife codes complete.
++
+Tested on ISA tests from
+https://github.com/riscv-software-src/riscv-tests[].  Drum and Fife
+PASS all 39 `rv32mi-p-...` tests, and 10/11 of the `rv32mi-p-...`
+tests (we ignore the 11th test, `rv32mi-p-breakpoint`, because it
+requires Debug Module CSRs which are not currently implented in Drum
+and Fife).
 
 * *Slides* (for lectures): complete.
 
 * *Exercises* (for labs): In progress; expected completion by end of
-  July 2024.
+  August 2024.
 
 This repository is expected to be updated frequently through the end
-of July 2024 as we complete the few remaining materials.  When you
+of August 2024 as we complete the few remaining materials.  When you
 clone it, you may wish to keep track of commit/date so you can revert
 to that version if needed.
 

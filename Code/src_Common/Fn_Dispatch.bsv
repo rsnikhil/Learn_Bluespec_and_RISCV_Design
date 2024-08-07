@@ -97,7 +97,8 @@ function ActionValue #(Result_Dispatch)
       Mem_Req_Type mrq_type = (is_LOAD (x.instr) ? funct5_LOAD
 			       : (is_STORE (x.instr) ? funct5_STORE
 				  : (is_FENCE (x.instr) ? funct5_FENCE
-				     : funct5_BOGUS)));
+				     : (is_FENCE_I (x.instr) ? funct5_FENCE_I
+					: funct5_BOGUS))));
 
       let to_EX_DMem = Mem_Req {req_type: mrq_type,
 				size:     mrq_size,

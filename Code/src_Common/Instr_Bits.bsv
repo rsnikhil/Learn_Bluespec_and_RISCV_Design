@@ -221,11 +221,12 @@ Bit #(5) funct5_AMOMAX  = 5'b_10100;
 Bit #(5) funct5_AMOMINU = 5'b_11000;
 Bit #(5) funct5_AMOMAXU = 5'b_11100;
 
-// The following are pseudo funct5s for ordinary LOAD/STORE and FENCE
-// used in Mem_Req
+// The following are pseudo funct5s for LOAD, STORE, FENCE, FENCE_I
+// used in Mem_Req (these funct5s are unused by AMO codings)
 Bit #(5) funct5_LOAD    = 5'b_11110;
 Bit #(5) funct5_STORE   = 5'b_11111;
 Bit #(5) funct5_FENCE   = 5'b_11101;
+Bit #(5) funct5_FENCE_I = 5'b_11001;
 Bit #(5) funct5_BOGUS   = 5'b_00101;
 
 function Bool is_legal_AMO (Bit #(32) instr);
@@ -442,7 +443,7 @@ function Bool is_CSRRCx (Bit #(32) instr);
 endfunction
 
 // ****************************************************************
-// The following are cheaper opcode tests, assuming instr is legal
+// The following are possibly cheaper opcode tests that assume instr is legal
 
 function Bit #(5) instr_opcode_5b (Bit #(32) instr);
    return instr [6:2];
@@ -482,6 +483,10 @@ endfunction
 
 function Bool is_FENCE (Bit #(32) instr);
    return is_legal_FENCE (instr);
+endfunction
+
+function Bool is_FENCE_I (Bit #(32) instr);
+   return is_legal_FENCE_I (instr);
 endfunction
 
 function Bool is_LR (Bit #(32) instr);

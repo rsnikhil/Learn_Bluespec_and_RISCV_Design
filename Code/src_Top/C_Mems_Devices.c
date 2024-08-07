@@ -41,13 +41,14 @@ static int verbosity_MMIO = 0;
 #define minimum(x,y) (((x) <= (y)) ? (x) : (y))
 
 // ****************************************************************
-// WARNING: THESE CODES SHOULD BE IDENTICAL TO THOSE IN Mem_Req_Rsp.bsv
+// WARNING: THESE CODES SHOULD BE IDENTICAL TO THOSE IN Instr_Bits.bsv
 
-// For LOAD/STORE Mem_Req_Type codes we utilize two 5-bit codes
-// that are not used by any AMO op
-#define funct5_FENCE    0x1D    // 11101
+// The following are pseudo funct5s for LOAD, STORE, FENCE, FENCE_I
+// used in Mem_Req (these funct5s are unused by AMO codings)
 #define funct5_LOAD     0x1E    // 11110
 #define funct5_STORE    0x1F    // 11111
+#define funct5_FENCE    0x1D    // 11101
+#define funct5_FENCE_I  0x19    // 11001
 
 // ----------------
 // For Mem_Req_Type codes we use the original funct5 codes for AMO ops
@@ -179,11 +180,12 @@ void fprint_mem_req (FILE *fp,
     fprintf (fp, "    Mem request I_%0" PRId64, inum);
     bool print_wdata = true;
     switch (req_type) {
-    case funct5_FENCE:   fprintf (fp, " FENCE"); print_wdata = false; break;
-    case funct5_LOAD:    fprintf (fp, " LOAD"); print_wdata = false; break;
-    case funct5_STORE:   fprintf (fp, " STORE"); break;
-    case funct5_LR:      fprintf (fp, " LR"); print_wdata = false; break;
-    case funct5_SC:      fprintf (fp, " SC"); break;
+    case funct5_FENCE:   fprintf (fp, " FENCE");   print_wdata = false; break;
+    case funct5_FENCE_I: fprintf (fp, " FENCE.I"); print_wdata = false; break;
+    case funct5_LOAD:    fprintf (fp, " LOAD");    print_wdata = false; break;
+    case funct5_STORE:   fprintf (fp, " STORE");   break;
+    case funct5_LR:      fprintf (fp, " LR");      print_wdata = false; break;
+    case funct5_SC:      fprintf (fp, " SC");      break;
     case funct5_AMOSWAP: fprintf (fp, " AMOSWAP"); break;
     case funct5_AMOADD:  fprintf (fp, " AMOADD");  break;
     case funct5_AMOXOR:  fprintf (fp, " AMOXOR");  break;
@@ -308,7 +310,11 @@ void c_access_mem (uint8_t        *result_p,
     if (req_type == funct5_LOAD) {
 	// rdata <= mem []
 	uint8_t *rdata_p = & (result_p [4]);
-	memcpy (rdata_p, mem_ptr, 8);
+
+	uint64_t *p64 = (uint64_t *) (rdata_p);
+	*p64 = 0;    // zeroes 8 bytes
+
+	memcpy (rdata_p, mem_ptr, size_B);
 
 	if (verbosity != 0)
 	    fprint_data (stdout, "    => rdata ", size_B, rdata_p, "\n");
@@ -452,12 +458,12 @@ void c_mems_devices_req_rsp (uint8_t        *result_p,
     const bool in_GPIO = ((ADDR_BASE_GPIO <= addr)
 			  && ((addr + size_B) <= (ADDR_BASE_GPIO + SIZE_B_GPIO)));
 
-    if (req_type == funct5_FENCE) {
+    if ((req_type == funct5_FENCE) || (req_type == funct5_FENCE_I)) {
 	// These should only come from CLIENT_MMIO
-	// For speculative accesses, FENCE is directly handled in mkStore_Buffer
+	// For speculative accesses, FENCE/FENCE.I are handled in mkStore_Buffer (deferred)
 	if (client != CLIENT_MMIO) {
-	    fprintf (stdout, "ERROR: FENCE expecting CLIENT_MMIO");
-	    fprintf_client (stdout, "; got ", client, "\n");
+	    fprintf (stdout, "ERROR: FENCE/FENCE.I, expecting client CLIENT_MMIO");
+	    fprintf_client (stdout, ", but client = ", client, "\n");
 	    exit (1);
 	}
 	uint32_t *status_p = (uint32_t *) result_p;

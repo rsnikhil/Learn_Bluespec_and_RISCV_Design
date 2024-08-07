@@ -34,7 +34,6 @@ import Inter_Stage :: *;
 import GPRs        :: *;
 
 import Fn_Dispatch :: *;
-import Fn_EX_DMem  :: *;
 
 // ****************************************************************
 

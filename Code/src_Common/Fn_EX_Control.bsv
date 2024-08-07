@@ -87,7 +87,7 @@ function ActionValue #(EX_Control_to_Retire)
 
       let y = EX_Control_to_Retire {exception:  exception,
 				    cause:      cause_INSTRUCTION_ADDRESS_MISALIGNED,
-				    tval:       x.pc,
+				    tval:       next_pc,
 				    next_pc:    next_pc,
 				    data:       x.fallthru_pc,
 				    inum:       x.inum,

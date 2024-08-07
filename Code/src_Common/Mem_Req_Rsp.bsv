@@ -22,6 +22,7 @@ function Fmt fshow_Mem_Req_Type (Mem_Req_Type mrt);
 	     funct5_LOAD:    $format ("LOAD");
 	     funct5_STORE:   $format ("STORE");
 	     funct5_FENCE:   $format ("FENCE");
+	     funct5_FENCE_I: $format ("FENCE.I");
 
 	     funct5_LR:      $format ("LR");
 	     funct5_SC:      $format ("SC");
@@ -99,7 +100,8 @@ function Fmt fshow_Mem_Req (Mem_Req x);
    fmt = fmt + $format (" addr:%08h", x.addr);
    if ((x.req_type != funct5_LOAD)
        && (x.req_type != funct5_LR)
-       && (x.req_type != funct5_FENCE))
+       && (x.req_type != funct5_FENCE)
+       && (x.req_type != funct5_FENCE_I))
       fmt = fmt + $format (" data:%08h", x.data);
    fmt = fmt + $format ("}");
    return fmt;

@@ -191,7 +191,8 @@ module mkStore_Buffer #(FIFOF_O #(Mem_Req)               fo_req_from_CPU,
 
    Bool defer = ((! in_mem)
 		 || (! aligned)
-		 || (cur_CPU_req.req_type == funct5_FENCE));
+		 || (cur_CPU_req.req_type == funct5_FENCE)
+		 || (cur_CPU_req.req_type == funct5_FENCE_I));
 
    Mem_Rsp default_rsp_to_CPU = Mem_Rsp {rsp_type: MEM_RSP_OK,
 					 data:     ?,
@@ -214,7 +215,7 @@ module mkStore_Buffer #(FIFOF_O #(Mem_Req)               fo_req_from_CPU,
    Bool fully_in_store_buf = (upd_mask & l_a_mask) == l_a_mask;
 
    // ----------------------------------------------------------------
-   // Requests deferred (not handled here): not in_mem, misaligned, FENCE
+   // Requests deferred (not handled here): not in_mem, misaligned, FENCE, FENCE.I
 
    rule rl_defer ((rg_fsm_state == FSM_STATE_IDLE) && defer);
       let rsp = default_rsp_to_CPU;
@@ -227,6 +228,7 @@ module mkStore_Buffer #(FIFOF_O #(Mem_Req)               fo_req_from_CPU,
       if (verbosity != 0) begin
 	 Fmt fmt = $format ("Spec_Store_Buf.rl_defer:");
 	 if (cur_CPU_req.req_type == funct5_FENCE) fmt = fmt + $format (" FENCE");
+	 else if (cur_CPU_req.req_type == funct5_FENCE_I) fmt = fmt + $format (" FENCE.I");
 	 if (! aligned) fmt = fmt + $format (" misaligned");
 	 if (! in_mem)  fmt = fmt + $format (" not in mem");
 	 fmt = fmt + $format ("\n");

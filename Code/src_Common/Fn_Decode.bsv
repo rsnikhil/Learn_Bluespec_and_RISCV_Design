@@ -134,6 +134,9 @@ function ActionValue #(Decode_to_RR)
       else if (is_legal_FENCE (instr)) begin
 	 y.opclass = OPCLASS_FENCE;
       end
+      else if (is_legal_FENCE_I (instr)) begin
+	 y.opclass = OPCLASS_FENCE;
+      end
       else begin
 	 y.exception = True;
 	 y.cause     = cause_ILLEGAL_INSTRUCTION;

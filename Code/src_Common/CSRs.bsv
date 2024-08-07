@@ -26,6 +26,16 @@ import CSR_Bits   :: *;
 
 // ****************************************************************
 
+function Bit #(XLEN) fn_legalize_mstatus (Bit #(XLEN) x);
+   Bit #(XLEN) y = x;
+   // Currently implementing only M mode
+   if (x [bitpos_MSTATUS_MPP+1 : bitpos_MSTATUS_MPP] != priv_M)
+      y = ((y & (~ mask_MSTATUS_MPP)) | (zeroExtend (priv_M) << bitpos_MSTATUS_MPP));
+   return y;
+endfunction
+
+// ****************************************************************
+
 interface CSRs_IFC;
    method Action init (Initial_Params initial_params);
 
@@ -42,6 +52,10 @@ interface CSRs_IFC;
 			 Bit #(4)    cause,
 			 Bit #(XLEN) tval);
 
+   // xRET actions
+   // Returns PC from MEPC
+   method ActionValue #(Bit #(XLEN)) mav_xRET ();
+
    method Bit #(XLEN) read_epc;
    method Action ma_incr_instret;
 
@@ -56,12 +70,18 @@ endinterface
 module mkCSRs (CSRs_IFC);
    Reg #(File) rg_flog <- mkReg (InvalidFile);    // For debugging in simulation only
 
-   Reg #(Bit #(XLEN)) csr_mstatus <- mkReg (0);
-   Reg #(Bit #(XLEN)) csr_mie     <- mkReg (0);
-   Reg #(Bit #(XLEN)) csr_mtvec   <- mkReg (0);
-   Reg #(Bit #(XLEN)) csr_mepc    <- mkReg (0);
-   Reg #(Bit #(XLEN)) csr_mcause  <- mkReg (0);
-   Reg #(Bit #(XLEN)) csr_mtval   <- mkReg (0);
+   Bit #(XLEN) one = 1;
+   let misa_I   = (one << 8);
+   let misa_mxl = (one << (xlen - 2));
+   let misa     = (misa_mxl | misa_I);
+
+   Reg #(Bit #(XLEN)) csr_mstatus  <- mkReg (fn_legalize_mstatus (0));
+   Reg #(Bit #(XLEN)) csr_mie      <- mkReg (0);
+   Reg #(Bit #(XLEN)) csr_mtvec    <- mkReg (0);
+   Reg #(Bit #(XLEN)) csr_mscratch <- mkReg (0);
+   Reg #(Bit #(XLEN)) csr_mepc     <- mkReg (0);
+   Reg #(Bit #(XLEN)) csr_mcause   <- mkReg (0);
+   Reg #(Bit #(XLEN)) csr_mtval    <- mkReg (0);
 
    Reg #(Bit #(64))   csr_minstret <- mkReg (0);
 
@@ -95,12 +115,18 @@ module mkCSRs (CSRs_IFC);
 
 	 Bool exception = False;
 	 case (csr_addr)
-	    csr_addr_MSTATUS: csr_mstatus <= csr_val;
-	    csr_addr_MIE  :   csr_mie     <= csr_val;
-	    csr_addr_MTVEC:   csr_mtvec   <= csr_val;
-	    csr_addr_MEPC:    csr_mepc    <= csr_val;
-	    csr_addr_MCAUSE:  csr_mcause  <= csr_val;
-	    csr_addr_MTVAL:   csr_mtval   <= csr_val;
+	    csr_addr_MISA:      noAction;    // read-only
+	    csr_addr_MVENDORID: noAction;    // read-only
+	    csr_addr_MARCHID:   noAction;    // read-only
+	    csr_addr_MIMPID:    noAction;    // read-only
+	    csr_addr_MHARTID:   noAction;    // read-only
+	    csr_addr_MSTATUS:  csr_mstatus  <= fn_legalize_mstatus (csr_val);
+	    csr_addr_MIE  :    csr_mie      <= csr_val;
+	    csr_addr_MTVEC:    csr_mtvec    <= csr_val;
+	    csr_addr_MSCRATCH: csr_mscratch <= csr_val;
+	    csr_addr_MEPC:     csr_mepc     <= csr_val;
+	    csr_addr_MCAUSE:   csr_mcause   <= csr_val;
+	    csr_addr_MTVAL:    csr_mtval    <= csr_val;
 
 	    csr_addr_MCYCLE:    if (xlen == 32)
 				   csr_mcycle [1] <= {csr_mcycle [1] [63:32],
@@ -141,6 +167,7 @@ module mkCSRs (CSRs_IFC);
 	 Bool        exception = False;
 	 Bit #(XLEN) y         = ?;
 	 case (csr_addr)
+	    csr_addr_MISA:      y = misa;
 	    csr_addr_MVENDORID: y = 0;
 	    csr_addr_MARCHID:   y = 0;
 	    csr_addr_MIMPID:    y = 0;
@@ -148,6 +175,7 @@ module mkCSRs (CSRs_IFC);
 	    csr_addr_MSTATUS:   y = csr_mstatus;
 	    csr_addr_MIE:       y = csr_mie;
 	    csr_addr_MTVEC:     y = csr_mtvec;
+	    csr_addr_MSCRATCH:  y = csr_mscratch;
 	    csr_addr_MEPC:      y = csr_mepc;
 	    csr_addr_MCAUSE:    y = csr_mcause;
 	    csr_addr_MTVAL:     y = csr_mtval;
@@ -208,7 +236,7 @@ module mkCSRs (CSRs_IFC);
 	 Bit #(5)  rd       = instr_rd (instr);
 
 	 // rs1_val is from register. Replace with immed if necessary.
-	 if (is_CSRRxI (instr)) rs1_val = signExtend (rs1);
+	 if (is_CSRRxI (instr)) rs1_val = zeroExtend (rs1);
 
 	 // Results
 	 Bool        exception     = False;
@@ -255,6 +283,11 @@ module mkCSRs (CSRs_IFC);
 
    // ================================================================
    // Exception method actions
+
+   // When a trap is taken from privilege mode y into privilege mode
+   // x, xPIE is set to the value of xIE; xIE is set to 0; and xPP is
+   // set to y.
+
    // Returns PC from MTVEC for trap handler
 
    function ActionValue #(Bit #(XLEN))
@@ -269,13 +302,60 @@ module mkCSRs (CSRs_IFC);
 	 csr_mcause <= (mcause_msb | zeroExtend (cause));
 	 csr_mtval  <= tval;
 
-	 // Compute and return trap PC
+	 // Push interrupt and privilege stack
+	 //   Clear MIE and MPIE
+	 Bit #(XLEN) new_mstatus = (csr_mstatus
+				    & (~ mask_MSTATUS_MIE)
+				    & (~ mask_MSTATUS_MPIE));
+	 //   Set MPIE to old MIE
+	 if (csr_mstatus [bitpos_MSTATUS_MIE] == 1'b1)
+	    new_mstatus = new_mstatus | mask_MSTATUS_MPIE;
+
+	 // Compute trap PC to be returned
 	 Bit #(XLEN) base        = (csr_mtvec & (~ 'h3));    // mask out [1:0]
 	 Bool        is_vectored = (csr_mtvec [1:0] == 2'b01);
 	 Bit #(XLEN) trap_pc = ((is_vectored && is_interrupt)
 				? base + (zeroExtend (cause) << 2)
 				: base);
+
+	 csr_mstatus <= new_mstatus;
+	 wr_log (rg_flog, $format ("CSRs: fav_exception mstatus %08h => %08h",
+				   csr_mstatus, new_mstatus));
 	 return trap_pc;
+      endactionvalue
+   endfunction
+
+   // ================================================================
+   // xRET
+   // Actions on MSTATUS:
+   //   xIE is set to xPIE; xPIE is set to 1;
+   //   the privilege mode is changed to y (value in MPP);
+   //   xPP is set to the least-privileged supported mode (U if supported else M);
+   //   If xPP̸ != M, also set MPRV=0.
+   // Returns PC from MEPC
+
+   function ActionValue #(Bit #(XLEN)) fav_xRET ();
+      actionvalue
+	 // Pop priv and interrupt stack
+	 //   Clear MIE and set MPIE
+	 Bit #(XLEN) new_mstatus = (csr_mstatus & (~ mask_MSTATUS_MIE)) | mask_MSTATUS_MPIE;
+	 //   Set MIE to old MPIE
+	 if (csr_mstatus [bitpos_MSTATUS_MPIE] == 1'b1)
+	    new_mstatus = new_mstatus | mask_MSTATUS_MIE;
+
+	 // The privilege mode is changed to y (value in MPP);
+	 // -- No-op (only M-mode implemented)
+
+	 //   xPP is set to the least-privileged supported mode (U if supported else M);
+	 // -- No-op (only M-mode implemented)
+
+         //   If (new) xPP̸ != M, also set MPRV=0.
+         // -- No-op (only M-mode implemented)
+
+	 csr_mstatus <= new_mstatus;
+	 wr_log (rg_flog, $format ("CSRs: fav_xRET mstatus %08h => %08h",
+				   csr_mstatus, new_mstatus));
+	 return csr_mepc;
       endactionvalue
    endfunction
 
@@ -291,6 +371,9 @@ module mkCSRs (CSRs_IFC);
 
    // Trap actions
    method mav_exception = fav_exception;
+
+   // xRET actions
+   method mav_xRET = fav_xRET;
 
    method Bit #(XLEN) read_epc = csr_mepc;
 

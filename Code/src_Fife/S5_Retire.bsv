@@ -25,7 +25,6 @@ import CSR_Bits    :: *;    // For trap CAUSE
 import Inter_Stage :: *;
 import Mem_Req_Rsp :: *;
 
-import Fn_EX_DMem   :: *;
 import CSRs         :: *;
 import Retire_Utils :: *;
 
@@ -222,14 +221,14 @@ module mkRetire (Retire_IFC);
 			  && is_Direct
 			  && (! x_rr_to_retire.exception)
 			  && is_legal_CSRRxx (x_rr_to_retire.instr));
-      f_RR_to_Retire.deq;
-
       match { .exc, .rd_val } <- csrs.mav_csrrxx (x_rr_to_retire.instr,
 						  x_rr_to_retire.rs1_val);
       // Unreserve/commit rd if needed
       fa_update_rd (x_rr_to_retire, (! exc), rd_val);
 
       if (! exc) begin
+	 f_RR_to_Retire.deq;
+
 	 Bool mispredicted = (x_rr_to_retire.predicted_pc
 			      != x_rr_to_retire.fallthru_pc);
 	 fa_redirect_Fetch (mispredicted,
@@ -289,8 +288,6 @@ module mkRetire (Retire_IFC);
 				    && (! wrong_path)
 				    && is_Direct
 				    && x_rr_to_retire.exception);
-      f_RR_to_Retire.deq;
-
       rg_epc   <= x_rr_to_retire.pc;
       rg_cause <= x_rr_to_retire.cause;
       rg_tval  <= x_rr_to_retire.tval;
@@ -298,11 +295,14 @@ module mkRetire (Retire_IFC);
 
       log_Retire_Direct_exc (rg_flog, x_rr_to_retire);
 
+      /*
       if (x_rr_to_retire.cause == cause_ILLEGAL_INSTRUCTION) begin
 	 wr_log2 (rg_flog,
 		  $format ("    TEMPORARY SIM OPTION: FINISH ON ILLEGAL INSTRUCTION"));
 	 $finish (1);
       end
+      */
+
    endrule
 
    // ================================================================
@@ -311,13 +311,14 @@ module mkRetire (Retire_IFC);
    rule rl_Retire_EX_Control ((rg_mode == MODE_PIPE)
 			      && (! wrong_path)
 			      && is_Control);
-      f_RR_to_Retire.deq;
       let x2 <- pop_o (to_FIFOF_O (f_EX_Control_to_Retire));
 
       // Unreserve/commit rd if needed
       fa_update_rd (x_rr_to_retire, (! x2.exception), x2.data);
 
       if (! x2.exception) begin
+	 f_RR_to_Retire.deq;
+
 	 // Redirect Fetch PC if mispredicted
 	 Bool mispredicted = (x_rr_to_retire.predicted_pc != x2.next_pc);
 	 fa_redirect_Fetch (mispredicted, x_rr_to_retire, x2.next_pc);
@@ -339,13 +340,14 @@ module mkRetire (Retire_IFC);
    rule rl_Retire_EX_Int ((rg_mode == MODE_PIPE)
 			  && (! wrong_path)
 			  && is_Int);
-      f_RR_to_Retire.deq;
       EX_to_Retire x2 <- pop_o (to_FIFOF_O (f_EX_Int_to_Retire));
 
       // Unreserve/commit rd if needed
       fa_update_rd (x_rr_to_retire, (! x2.exception), x2.data);
 
       if (! x2.exception) begin
+	 f_RR_to_Retire.deq;
+
 	 // Redirect Fetch PC if mispredicted
 	 Bool mispredicted = (x_rr_to_retire.predicted_pc
 			      != x_rr_to_retire.fallthru_pc);
@@ -372,15 +374,26 @@ module mkRetire (Retire_IFC);
 			   && is_DMem
 			   && (f_DMem_S_rsp.first.rsp_type != MEM_REQ_DEFERRED));
 
-      f_RR_to_Retire.deq;
       let x2 <- pop_o (to_FIFOF_O (f_DMem_S_rsp));
 
       Bool exception = (x2.rsp_type != MEM_RSP_OK);
 
+      // Sign-extend data if necessary
+      let data = x2.data;
+      if (instr_opcode (x_rr_to_retire.instr) == opcode_LOAD) begin
+	 if (instr_funct3 (x_rr_to_retire.instr) == funct3_LB)
+	    data = signExtend (data [7:0]);
+	 else if (instr_funct3 (x_rr_to_retire.instr) == funct3_LH)
+	    data = signExtend (data [15:0]);
+	 // TODO: LW in RV64
+      end
+
       // Unreserve/commit rd if needed
-      fa_update_rd (x_rr_to_retire, (! exception), truncate (x2.data));
+      fa_update_rd (x_rr_to_retire, (! exception), truncate (data));
 
       if (! exception) begin
+	 f_RR_to_Retire.deq;
+
 	 // Send 'commit' (True) to store-buf, if needed
 	 fa_retire_store_buf (x_rr_to_retire, x2, True);
 
@@ -436,7 +449,6 @@ module mkRetire (Retire_IFC);
    // Handle DMem response
 
    rule rl_Retire_DMem_rsp (rg_mode == MODE_DMEM_RSP);
-      f_RR_to_Retire.deq;
       let x2 <- pop_o (to_FIFOF_O (f_DMem_rsp));
 
       Bool exception = ((x2.rsp_type == MEM_RSP_ERR)
@@ -462,8 +474,20 @@ module mkRetire (Retire_IFC);
 	 $finish (1);
       end
       else begin
+	 f_RR_to_Retire.deq;
+
+	 // Sign-extend data if necessary
+	 let data = x2.data;
+	 if (instr_opcode (x_rr_to_retire.instr) == opcode_LOAD) begin
+	    if (instr_funct3 (x_rr_to_retire.instr) == funct3_LB)
+	       data = signExtend (data [7:0]);
+	    else if (instr_funct3 (x_rr_to_retire.instr) == funct3_LH)
+	       data = signExtend (data [15:0]);
+	    // TODO: LW in RV64
+	 end
+
 	 // Unreserve/commit rd if needed
-	 fa_update_rd (x_rr_to_retire, True, truncate (x2.data));
+	 fa_update_rd (x_rr_to_retire, True, truncate (data));
 
 	 // Redirect Fetch to correct mispredicted PC
 	 Bool mispredicted = (x_rr_to_retire.predicted_pc
@@ -484,6 +508,8 @@ module mkRetire (Retire_IFC);
    // All exceptions
 
    rule rl_exception (rg_mode == MODE_EXCEPTION);
+      f_RR_to_Retire.deq;
+
       Bool is_interrupt = False;
       Bit #(XLEN) tvec_pc <- csrs.mav_exception (rg_epc,
 						 is_interrupt,

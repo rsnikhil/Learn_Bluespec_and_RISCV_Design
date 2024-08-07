@@ -18,6 +18,15 @@ import Arch       :: *;
 import Instr_Bits :: *;    // For XLEN, xlen
 
 // ****************************************************************
+// Privilege levels
+
+Bit #(2) priv_M = 2'b_11;
+Bit #(2) priv_S = 2'b_01;
+Bit #(2) priv_U = 2'b_00;
+
+Bit #(2) priv_Reserved = 2'b_10;
+
+// ****************************************************************
 // CSR addresses
 
 Bit #(12) csr_addr_MTVEC     = 'h305;
@@ -53,6 +62,19 @@ Bit #(12) csr_addr_MINSTRET  = 'hB02;
 Bit #(12) csr_addr_MCYCLEH   = 'hB80;
 //                 MTIMEH is an MMIO location, not a CSR
 Bit #(12) csr_addr_MINSTRETH = 'hB82;
+
+// ****************************************************************
+// MSTATUS fields
+
+Integer bitpos_MSTATUS_MIE  = 3;
+Integer bitpos_MSTATUS_MPIE = 7;
+Integer bitpos_MSTATUS_MPP  = 11;
+Integer bitpos_MSTATUS_MPRV = 17;
+
+Bit #(XLEN) mask_MSTATUS_MIE  = truncate (64'h_1 << bitpos_MSTATUS_MIE);
+Bit #(XLEN) mask_MSTATUS_MPIE = truncate (64'h_1 << bitpos_MSTATUS_MPIE);
+Bit #(XLEN) mask_MSTATUS_MPP  = truncate (64'h_3 << bitpos_MSTATUS_MPP);
+Bit #(XLEN) mask_MSTATUS_MPRV = truncate (64'h_1 << bitpos_MSTATUS_MPRV);
 
 // ****************************************************************
 // Exception causes

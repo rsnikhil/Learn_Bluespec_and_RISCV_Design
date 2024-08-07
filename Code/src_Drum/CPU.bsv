@@ -42,7 +42,6 @@ import Fn_Dispatch :: *;
 
 import Fn_EX_Control :: *;
 import Fn_EX_Int     :: *;
-import Fn_EX_DMem    :: *;
 
 // ****************************************************************
 // Choose either FSM version or explicit-rules version
@@ -237,7 +236,8 @@ module mkCPU (CPU_IFC);
       end
       // ----------------
       else if (is_legal_MRET (x_direct.instr)) begin
-	 fa_redirect_Fetch (csrs.read_epc);
+	 let new_pc <- csrs.mav_xRET;
+	 fa_redirect_Fetch (new_pc);
 	 csrs.ma_incr_instret;
 	 log_Retire_MRET (rg_flog, x_direct);
       end
@@ -349,7 +349,15 @@ module mkCPU (CPU_IFC);
 			     truncate (mem_rsp.addr));    // tval
       end
       else begin
-	 fa_update_rd (x_direct, truncate (mem_rsp.data));
+	 let data = mem_rsp.data;
+	 if (instr_opcode (x_direct.instr) == opcode_LOAD) begin
+	    if (instr_funct3 (x_direct.instr) == funct3_LB)
+	       data = signExtend (data [7:0]);
+	    else if (instr_funct3 (x_direct.instr) == funct3_LH)
+	       data = signExtend (data [15:0]);
+	    // TODO: LW in RV64
+	 end
+	 fa_update_rd (x_direct, truncate (data));
 	 fa_redirect_Fetch (x_direct.fallthru_pc);
 	 csrs.ma_incr_instret;
       end
@@ -393,6 +401,7 @@ module mkCPU (CPU_IFC);
 
       rg_pc      <= initial_params.pc_reset_value;
       rg_running <= True;
+      csrs.init (initial_params);
       $display ("%s: starting execution at PC %0h",
 		cpu_name, initial_params.pc_reset_value);
    endmethod
