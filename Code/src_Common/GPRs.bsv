@@ -26,6 +26,10 @@ interface GPRs_IFC #(numeric type xlen);
    method Bit #(xlen) read_rs1 (Bit #(5) rs1);
    method Bit #(xlen) read_rs2 (Bit #(5) rs2);
    method Action      write_rd (Bit #(5) rd, Bit #(xlen) rd_val);
+
+
+   method Bit #(xlen) read_dm  (Bit #(5) rs);
+   method Action      write_dm (Bit #(5) rd, Bit #(xlen) rd_val);
 endinterface
 
 // ================================================================
@@ -50,6 +54,15 @@ module mkGPRs (GPRs_IFC #(xlen));
    endmethod
 
    method Action write_rd (Bit #(5) rd, Bit #(xlen) rd_val);
+      rf.upd (rd, rd_val);
+   endmethod
+
+
+   method Bit #(xlen) read_dm  (Bit #(5) rs);
+      return ((rs == 0) ? 0 : rf.sub (rs));
+   endmethod
+
+   method Action      write_dm (Bit #(5) rd, Bit #(xlen) rd_val);
       rf.upd (rd, rd_val);
    endmethod
 endmodule

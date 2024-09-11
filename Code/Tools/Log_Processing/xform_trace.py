@@ -3,9 +3,15 @@
 # Author: Rishiyur Nikhil
 
 # ================================================================
+# Import standard libs
 
 import sys
 import os
+
+# ----------------
+# Import our libs
+
+import disasm_lib
 
 # ================================================================
 
@@ -65,14 +71,16 @@ def main (argv):
             line = fi.readline()
             in_line_num += 1
             if line == "": break
-            (b, xline) = xform (line)
+            (b, xline, instr) = xform (line)
             if b: break
 
         if (line == ""): break    # EOF
         line = line.rstrip()
 
         fo_1.write ("{:s}\n".format (xline))
-        fo_2.write ("{:s} ***** L{:d}: {:s}\n".format (xline, in_line_num, line))
+        instr_asm = disasm_lib.disasm (32, instr)
+        fo_2.write ("{:s} {:s}    *L{:d} {:s}\n"
+                    .format (xline, instr_asm, in_line_num, line))
         out_line_num += 1
 
     sys.stdout.write ("Num lines: input:{:d}  output:{:d}\n"
@@ -87,18 +95,18 @@ def main (argv):
 
 def xform (line):
     # For Drum/Fife
-    if not line.startswith ("Trace"): return (False, None)
-    if not ("RET"          in line):   return (False, None)
-    if      "RET.Drsp"     in line:    return (False, None)
-    if      "RET.discard"  in line:    return (False, None)
-    if      "RET.CSRRxx.X" in line:    return (False, None)
-    if      "RET.Dir.X"    in line:    return (False, None)
+    if not line.startswith ("Trace"): return (False, None, None)
+    if not ("RET"          in line):  return (False, None, None)
+    if      "RET.Drsp"     in line:   return (False, None, None)
+    if      "RET.discard"  in line:   return (False, None, None)
+    if      "RET.CSRRxx.X" in line:   return (False, None, None)
+    if      "RET.Dir.X"    in line:   return (False, None, None)
 
     words = line.split ()
     pc    = int (words [3], 16)
     instr = int (words [4], 16)
     xline = "{:08x} {:08x}".format (pc, instr)
-    return (True, xline)
+    return (True, xline, instr)
 
 # ================================================================
 # For non-interactive invocations, call main() and use its return value

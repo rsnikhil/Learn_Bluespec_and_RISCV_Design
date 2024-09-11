@@ -14,6 +14,7 @@ import Vector :: *;
 import Arch       :: *;
 import Instr_Bits :: *;
 import CSR_Bits   :: *;
+import Mem_Req_Rsp :: *;
 
 // ****************************************************************
 // Pipeline forward flow
@@ -31,6 +32,8 @@ typedef struct {
    Epoch        epoch;           // Fife only: for branch-prediction
 
    Bit #(64)    inum;            // for debugging only
+   // Debugger support
+   Bool         halt_sentinel;
 } Fetch_to_Decode
 deriving (Bits, FShow);
 
@@ -64,6 +67,9 @@ typedef struct {Bit #(XLEN)  pc;
 		Bit #(XLEN)  predicted_pc; // For branch-prediction only
 		Epoch        epoch;        // For branch-prediction only
 		Bit #(64)    inum;
+
+		// Debugger support
+		Bool         halt_sentinel;
 } Decode_to_RR
 deriving (Bits, FShow);
 
@@ -98,6 +104,9 @@ typedef struct {Exec_Tag     exec_tag;    // ``flow'' for this instr
 		Epoch        epoch;
 
 		Bit #(64)    inum;            // for debugging only
+
+		// Debugger support
+		Bool         halt_sentinel;
 } RR_to_Retire
 deriving (Bits, FShow);
 
@@ -179,6 +188,7 @@ deriving (Bits, FShow);
 typedef struct {Bit #(64)   inum;     // for debugging only
 		Bit #(XLEN) pc;       // for debugging only
 		Bit #(32)   instr;    // for debugging only
+		Bool        haltreq;  // for debugger control only
 
 		Bit #(XLEN) next_pc;
 		Epoch       next_epoch;
@@ -200,6 +210,64 @@ deriving (Bits, FShow);
 // ****************************************************************
 // ****************************************************************
 // ****************************************************************
+// Messages between debugger and CPU
+
+// WARNING! WARNING! WARNING!
+//   These packets are exchanged with C code (debugger, debugger stub).
+//   There is no type-checking across the BSV-C boundary.
+//   Make sure that packets are re-coded correctly across the boundary!
+
+// ================================================================
+// Debugger to CPU packets
+
+typedef enum {Dbg_to_CPU_NOOP,
+              Dbg_to_CPU_RESUMEREQ,
+              Dbg_to_CPU_HALTREQ,
+              Dbg_to_CPU_RW,
+              Dbg_to_CPU_QUIT}     Dbg_to_CPU_Pkt_type
+deriving (Bits, Eq, FShow);
+
+typedef enum {Dbg_RW_GPR, Dbg_RW_FPR, Dbg_RW_CSR, Dbg_RW_MEM} Dbg_RW_Target
+   deriving (Bits, Eq, FShow);
+
+typedef enum {Dbg_RW_READ, Dbg_RW_WRITE}                      Dbg_RW_Op
+   deriving (Bits, Eq, FShow);
+
+typedef enum {Dbg_MEM_1B, Dbg_MEM_2B, Dbg_MEM_4B, Dbg_MEM_8B} Dbg_RW_Size
+   deriving (Bits, Eq, FShow);
+
+typedef struct {
+   Dbg_to_CPU_Pkt_type  pkt_type;
+   // The remaining fields are only relevant for RW requests
+   Dbg_RW_Target        rw_target;
+   Dbg_RW_Op            rw_op;
+   Dbg_RW_Size          rw_size;
+   Bit #(XLEN)          rw_addr;
+   Bit #(XLEN)          rw_wdata;
+} Dbg_to_CPU_Pkt
+deriving (Bits, FShow);
+
+// ================================================================
+// Debugger from CPU
+
+typedef enum {Dbg_from_CPU_RESUMEACK,
+              Dbg_from_CPU_RUNNING,
+              Dbg_from_CPU_HALTED,
+              Dbg_from_CPU_RW_OK,
+              Dbg_from_CPU_ERR}      Dbg_from_CPU_Pkt_type
+deriving (Bits, Eq, FShow);
+
+typedef struct {
+   Dbg_from_CPU_Pkt_type  pkt_type;
+   Bit #(XLEN)            payload;  // read-data   in RW_OK  resp for RW:RW_READ req
+                                    // error-code  in ERR    responses
+                                    // unused/don't care otherwise
+} Dbg_from_CPU_Pkt
+deriving (Bits, FShow);
+
+// ****************************************************************
+// ****************************************************************
+// ****************************************************************
 // Specialized fshow functions
 
 function Fmt fshow_Fetch_to_Decode (Fetch_to_Decode x);
@@ -207,7 +275,7 @@ function Fmt fshow_Fetch_to_Decode (Fetch_to_Decode x);
    f = f + $format ("I_%0d", x.inum);
    f = f + $format (" pc:%08h", x.pc);
    f = f + $format (" pred:%08h epoch:%0d", x.predicted_pc, x.epoch);
-   f = f + $format ("}");
+   f = f + $format (" halt_sentinel:%0d}", x.halt_sentinel);
    return f;
 endfunction
 
@@ -228,7 +296,7 @@ function Fmt fshow_Decode_to_RR (Decode_to_RR x);
       f = f + $format (" has_{rs1,rs2,rd}:{%0d,%0d,%0d} writes_mem:%0d, imm:%0h",
 		       x.has_rs1, x.has_rs2, x.has_rd, x.writes_mem, x.imm);
    end
-   f = f + $format ("}");
+   f = f + $format (" halt_sentinel:%0d}", x.halt_sentinel);
    return f;
 endfunction
 
@@ -246,7 +314,7 @@ function Fmt fshow_RR_to_Retire (RR_to_Retire x);
       f = f + $format (" ", fshow_cause (x.cause));
       f = f + $format (" tval:%0h", x.tval);
    end
-   f = f + $format ("}");
+   f = f + $format (" halt_sentinel:%0d}", x.halt_sentinel);
    return f;
 endfunction
 
@@ -313,7 +381,8 @@ function Fmt fshow_Fetch_from_Retire (Fetch_from_Retire x);
    f = f + $format ("I_%0d", x.inum);
    f = f + $format (" pc:%08h", x.pc);
    f = f + $format (" instr:%08h", x.instr);
-   f = f + $format (" next_pc:%08h next_epoch %0d", x.next_pc, x.next_epoch);
+   f = f + $format (" next_pc:%08h next_epoch %0d haltreq %0d",
+		    x.next_pc, x.next_epoch, x.haltreq);
    f = f + $format ("}");
    return f;
 endfunction
@@ -323,6 +392,40 @@ function Fmt fshow_RW_from_Retire (RW_from_Retire x);
    f = f + $format ("I_%0d pc:%08h instr:%08h", x.inum, x.pc, x.instr);
    f = f + $format (" rd:%0d commit:%0d data:%08x", x.rd, x.commit, x.data);
    f = f + $format ("}");
+   return f;
+endfunction
+
+function Fmt fshow_Dbg_to_CPU_Pkt (Dbg_to_CPU_Pkt x);
+   Fmt f = $format ("Dbg_to_CPU_Pkt{");
+   if (x.pkt_type == Dbg_to_CPU_RESUMEREQ)
+      f = f + $format ("RESUMEREQ");
+   else if (x.pkt_type == Dbg_to_CPU_HALTREQ)
+      f = f + $format ("HALTREQ");
+   else if (x.pkt_type == Dbg_to_CPU_RW) begin
+      f = f + $format ("RW");
+      f = f + ((x.rw_op == Dbg_RW_READ) ? $format (" READ") : $format (" WRITE"));
+      f = f + ((x.rw_size == Dbg_MEM_1B) ? $format (" 1B")
+	       : ((x.rw_size == Dbg_MEM_2B) ? $format (" 2B")
+		  : ((x.rw_size == Dbg_MEM_4B) ? $format (" 4B")
+		     : $format (" 8B"))));
+      if (x.rw_target == Dbg_RW_GPR)
+	 f = f + $format (" GPR x%0d", x.rw_addr);
+      else if (x.rw_target == Dbg_RW_FPR)
+	 f = f + $format (" FPR x%0d", x.rw_addr);
+      else if (x.rw_target == Dbg_RW_CSR)
+	 f = f + $format (" CSR 0x%0x", x.rw_addr);
+      else
+	 f = f + $format (" Mem 0x%0x", x.rw_addr);
+      if (x.rw_op == Dbg_RW_WRITE)
+	 f = f + $format (" 0x%0x", x.rw_wdata);
+   end
+   f = f + $format ("}");
+   return f;
+endfunction
+
+function Fmt fshow_Dbg_from_CPU_Pkt (Dbg_from_CPU_Pkt x);
+   Fmt f = $format ("Dbg_from_CPU_Pkt{", fshow (x.pkt_type));
+   f = f + $format (" %0h}", x.payload);
    return f;
 endfunction
 

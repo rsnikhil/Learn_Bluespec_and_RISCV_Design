@@ -24,6 +24,7 @@ import CPU_IFC     :: *;
 import CPU         :: *;
 
 import Mems_Devices :: *;
+import Dbg_Stub     :: *;
 
 // ****************************************************************
 
@@ -41,7 +42,12 @@ module mkTop (Empty);
 						    cpu.fi_DMem_S_rsp,
 						    cpu.fo_DMem_S_commit,
 						    cpu.fo_DMem_req,
-						    cpu.fi_DMem_rsp);
+						    cpu.fi_DMem_rsp,
+						    cpu.fo_dbg_to_mem_req,
+						    cpu.fi_dbg_from_mem_rsp);
+
+   Dbg_Stub_IFC dbg_stub <- mkDbg_Stub (cpu.fi_dbg_to_CPU_pkt,
+					cpu.fo_dbg_from_CPU_pkt);
 
    Reg #(int) rg_top_step <- mkReg (0);    // Sequences startup steps
 
@@ -54,7 +60,9 @@ module mkTop (Empty);
    // Show banner and open logfile
    rule rl_step0 (rg_top_step == 0);
       $display ("================================================================");
-      $display ("CPU is: %s", cpu_name);
+      $display ("Simulation top-level.  Command-line options:");
+      $display ("  +debug    Start under control of remote debugger (EDB/GDB/... over TCP)");
+      $display ("  +log      Generate log (trace) file (can become large!)");
 
       let log <- $test$plusargs ("log");
       File f = InvalidFile;
@@ -73,12 +81,17 @@ module mkTop (Empty);
 
    // Initialize modules
    rule rl_step1 (rg_top_step == 1);
-      let init_params = Initial_Params {flog:           rg_logfile,
-					pc_reset_value: 'h_8000_0000,
-					addr_base_mem:  'h_8000_0000,
-					size_B_mem:     'h_1000_0000};
+      let with_debugger <- $test$plusargs ("debug");
+
+
+      let init_params = Initial_Params {flog:              rg_logfile,
+					pc_reset_value:    'h_8000_0000,
+					addr_base_mem:     'h_8000_0000,
+					size_B_mem:        'h_1000_0000,
+					dbg_listen_socket: (with_debugger ? 30000 : 0)};
       cpu.init (init_params);
       mems_devices.init (init_params);
+      dbg_stub.init (init_params);
 
       rg_top_step <= 2;
    endrule

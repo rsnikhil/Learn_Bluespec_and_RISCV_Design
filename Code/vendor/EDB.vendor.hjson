@@ -1,0 +1,24 @@
+{
+  // Name of the vendored-in project
+  name: "EDB",
+
+  // Target directory: typically equal to the name
+  // All imported code is copied into this directory
+  target_dir: "EDB",
+
+  // Git upstream source code repository
+  upstream: {
+    // Upstream Git repository URL. HTTPS URLs are preferred.
+    url: "https://github.com/rsnikhil/EDB",
+    // Upstream revision or branch. Can be a commit hash or a branch name.
+    rev: "main",
+  },
+
+  // Optional: Pick specific files or subdirectories from upstream and
+  // specify where to put them.
+  mapping: [
+    {from: 'src_C/Dbg_Pkts.h',  to: 'Dbg_Pkts.h'},
+    {from: 'src_C/Dbg_Pkts.c',  to: 'Dbg_Pkts.c'},
+    {from: 'test/edbstub.c',    to: 'edbstub.c'}
+  ]
+}

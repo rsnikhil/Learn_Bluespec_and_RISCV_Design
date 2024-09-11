@@ -21,12 +21,13 @@ import SoC_Map      :: *;
 // ================================================================
 // Fabric port numbers for Initiators
 
-typedef 2  Core_MMIO_Fabric_Num_Initiators;    // Fife/Drum Core IMem and DMem
+typedef 3  Core_MMIO_Fabric_Num_Initiators;
 
 typedef Bit #(TLog #(Core_MMIO_Fabric_Num_Initiators))  Core_MMIO_Fabric_Initiator_Num;
 
-Core_MMIO_Fabric_Initiator_Num  cpu_imem_master_num = 0;
-Core_MMIO_Fabric_Initiator_Num  cpu_dmem_master_num = 1;
+Core_MMIO_Fabric_Initiator_Num  cpu_imem_master_num   = 0;    // IMem
+Core_MMIO_Fabric_Initiator_Num  cpu_dmem_S_master_num = 1;    // speculative DMem
+Core_MMIO_Fabric_Initiator_Num  cpu_dmem_master_num   = 2;    // non-speculative DMem
 
 // ----------------
 // Fabric port numbers for targets

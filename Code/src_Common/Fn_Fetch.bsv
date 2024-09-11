@@ -44,7 +44,9 @@ function ActionValue #(Result_F)
       y.to_D = Fetch_to_Decode {pc:           pc,
 				predicted_pc: predicted_pc,
 				epoch:        epoch,
-				inum:         inum};
+				inum:         inum,
+				// Debugger support
+				halt_sentinel:False };
       // Request to IMem
       y.mem_req = Mem_Req {req_type: funct5_LOAD,
 			   size:     MEM_4B,

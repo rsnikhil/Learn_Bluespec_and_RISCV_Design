@@ -44,6 +44,8 @@ endinterface
 
 // ****************************************************************
 
+Integer verbosity = 0;
+
 (* synthesize *)
 module mkDecode (Decode_IFC);
    // ================================================================
@@ -61,7 +63,7 @@ module mkDecode (Decode_IFC);
    // ================================================================
    // BEHAVIOR
 
-   rule rl_Decode;
+   rule rl_Decode (! f_Fetch_to_Decode.first.halt_sentinel);
       Fetch_to_Decode  x        <- pop_o (to_FIFOF_O (f_Fetch_to_Decode));
       Mem_Rsp          rsp_IMem <- pop_o (to_FIFOF_O (f_IMem_to_Decode));
 
@@ -70,6 +72,20 @@ module mkDecode (Decode_IFC);
       f_Decode_to_RR.enq (y);
 
       log_Decode (rg_flog, y, rsp_IMem);
+
+   endrule
+
+   // Debugger support
+   rule rl_Decode_halting (f_Fetch_to_Decode.first.halt_sentinel);
+      f_Fetch_to_Decode.deq;
+      Decode_to_RR y = unpack (0);
+      y.epoch         = f_Fetch_to_Decode.first.epoch;
+      y.halt_sentinel = True;
+      f_Decode_to_RR.enq (y);
+
+      log_Decode (rg_flog, y, unpack (0));
+      if (verbosity != 0)
+	 $display ("S2_Decode: halt requested; sending halt_sentinel to S3_RR_RW_Dispatch");
 
    endrule
 

@@ -69,7 +69,9 @@ function ActionValue #(Result_Dispatch)
 
 				    predicted_pc: x.predicted_pc,
 				    epoch:        x.epoch,
-				    inum:         x.inum};
+				    inum:         x.inum,
+				    // Debugger support
+				    halt_sentinel:False };
 
       // ----------------
       // Info for EX_Control

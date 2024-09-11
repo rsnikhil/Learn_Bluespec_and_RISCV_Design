@@ -53,6 +53,19 @@ interface Retire_IFC;
    // Set TIME
    (* always_ready, always_enabled *)
    method Action set_TIME (Bit #(64) t);
+
+   // Debugger control
+   // For haltreq/resumereq, True result means OK, False means error
+   method ActionValue #(Bool) haltreq;
+   method ActionValue #(Bool) resumereq;
+
+   method Bool is_running;
+   method Bool is_halted;
+
+   method ActionValue #(Bool)
+          csr_write (Bit #(12) csr_addr, Bit #(XLEN) csr_val);
+   method ActionValue #(Tuple2 #(Bool, Bit #(XLEN)))
+          csr_read (Bit #(12) csr_addr);
 endinterface
 
 // ****************************************************************
@@ -62,6 +75,17 @@ typedef enum {MODE_PIPE,        // Normal pipeline operation
 	      MODE_EXCEPTION
 } Module_Mode
 deriving (Bits, Eq, FShow);
+
+// Debugger control
+typedef enum {S5_RUNNING,
+              S5_HALTREQ,
+              S5_HALTING1,
+              S5_HALTING2,
+              S5_HALTED
+} S5_RunState
+deriving (Bits, Eq, FShow);
+
+Integer verbosity = 0;
 
 // ****************************************************************
 
@@ -100,8 +124,19 @@ module mkRetire (Retire_IFC);
    Reg #(Bit #(4))    rg_cause <- mkRegU;
    Reg #(Bit #(XLEN)) rg_tval  <- mkRegU;
 
-   // One-instr-at-a-time (unpipelined) control
-   Reg #(Bool) rg_oiaat <- mkReg (False);
+   // Debugger control
+   Reg #(S5_RunState) rg_runstate     <- mkReg (S5_RUNNING);
+   Reg #(Bit #(XLEN)) rg_dpc          <- mkRegU;
+   Reg #(Bit #(3))    rg_dcsr_cause   <- mkRegU;
+   Reg #(Bit #(2))    rg_dcsr_prv     <- mkRegU;
+
+   Bit #(32) dpc  = csrs.get_dpc;
+   Bit #(32) dcsr = csrs.get_dcsr;
+
+   // TODO (IMPROVEMENT) 'ebreak_halt' only depends on dcsr.ebreakm
+   // while only supporting M priv. For M+U, M+S+U, M+VS+VU+U also
+   // depends on other dcsr ebreak bits
+   Bool ebreak_halt = (dcsr [index_dcsr_ebreakm] == 1'b1);
 
    // ****************************************************************
    // BEHAVIOR
@@ -111,23 +146,36 @@ module mkRetire (Retire_IFC);
 
 
    function Action fa_redirect_Fetch (Bool         mispredicted,
+				      Bool         haltreq,
 				      RR_to_Retire x1,
 				      Bit #(XLEN)  next_pc);
       action
-	 if (mispredicted || rg_oiaat) begin
-	    let next_epoch = rg_epoch + 1;
-	    rg_epoch <= next_epoch;
-	    let y = Fetch_from_Retire {next_pc:    next_pc,
-				       next_epoch: next_epoch,
-				       inum:       x1.inum,
-				       pc:         x1.pc,
-				       instr:      x1.instr};
-	    f_Fetch_from_Retire.enq (y);
 
-	    // ---------------- DEBUG
-	    wr_log (rg_flog, $format ("    CPU.S5.fa_redirect_Fetch:\n    ",
-				      fshow_Fetch_from_Retire (y)));
+	 if (haltreq) begin
+	    rg_dpc        <= next_pc;
+	    rg_dcsr_prv   <= priv_M;
+	    rg_runstate   <= S5_HALTING1;
+	    if (verbosity != 0)
+	       $display ("S5_Retire.fa_redirect_Fetch: rg_runstate: HALTREQ->HALTING1");
 	 end
+
+	 if (((rg_runstate == S5_RUNNING) && mispredicted)
+	     || haltreq)
+	    begin
+	       let next_epoch = rg_epoch + 1;
+	       rg_epoch <= next_epoch;
+	       let y = Fetch_from_Retire {next_pc:    next_pc,
+					  next_epoch: next_epoch,
+					  haltreq:    haltreq,
+					  inum:       x1.inum,
+					  pc:         x1.pc,
+					  instr:      x1.instr};
+	       f_Fetch_from_Retire.enq (y);
+
+	       // ---------------- DEBUG
+	       wr_log (rg_flog, $format ("    CPU.S5.fa_redirect_Fetch:\n    ",
+					 fshow_Fetch_from_Retire (y)));
+	    end
       endaction
    endfunction
 
@@ -188,7 +236,8 @@ module mkRetire (Retire_IFC);
    // Wrong-path; ignore and discard (all pipes)
 
    rule rl_Retire_wrong_path ((rg_mode == MODE_PIPE)
-			      && wrong_path);
+			      && wrong_path
+			      && (! x_rr_to_retire.halt_sentinel));
       f_RR_to_Retire.deq;
 
       // Unreserve/commit rd if needed
@@ -208,6 +257,30 @@ module mkRetire (Retire_IFC);
 	      "RET.discard", $format (""));
       wr_log (rg_flog, $format ("CPU.S5.rl_Retire_wrong_path:\n    ",
 				+ fshow_RR_to_Retire (x_rr_to_retire)));
+   endrule
+
+   // ================================================================
+   // Halting for debugger
+
+   rule rl_Retire_wrong_path_halt1 (rg_runstate == S5_HALTING1);
+      csrs.save_dpc_dcsr_cause_prv (rg_dpc, rg_dcsr_cause, rg_dcsr_prv);
+      rg_runstate <= S5_HALTING2;
+
+      if (verbosity != 0)
+	 $display ("S5_Retire: saving DPC %0h DCSR.cause %0d DCSR.prv %0d",
+		   rg_dpc, rg_dcsr_cause, rg_dcsr_prv);
+   endrule
+
+   rule rl_Retire_wrong_path_halt2 ((rg_mode == MODE_PIPE)
+				    && wrong_path
+				    && (rg_runstate == S5_HALTING2)
+				    && x_rr_to_retire.halt_sentinel);
+      f_RR_to_Retire.deq;
+      rg_runstate <= S5_HALTED;
+
+      if (verbosity != 0)
+	 $display ("CPU.S5: received halt_sentinel from S3_RR_RW_Dispatch");
+      $display ("CPU.S5: HALTED");
    endrule
 
    // ================================================================
@@ -232,6 +305,7 @@ module mkRetire (Retire_IFC);
 	 Bool mispredicted = (x_rr_to_retire.predicted_pc
 			      != x_rr_to_retire.fallthru_pc);
 	 fa_redirect_Fetch (mispredicted,
+			    (rg_runstate == S5_HALTREQ),
 			    x_rr_to_retire,
 			    x_rr_to_retire.fallthru_pc);
       end
@@ -255,7 +329,10 @@ module mkRetire (Retire_IFC);
 			&& is_legal_MRET (x_rr_to_retire.instr));
       f_RR_to_Retire.deq;
       Bool mispredicted = True;
-      fa_redirect_Fetch (mispredicted, x_rr_to_retire, csrs.read_epc);
+      fa_redirect_Fetch (mispredicted,
+			 (rg_runstate == S5_HALTREQ),
+			 x_rr_to_retire,
+			 csrs.read_epc);
       csrs.ma_incr_instret;
 
       log_Retire_MRET (rg_flog, x_rr_to_retire);
@@ -269,7 +346,8 @@ module mkRetire (Retire_IFC);
 				&& is_Direct
 				&& (! x_rr_to_retire.exception)
 				&& (is_legal_ECALL (x_rr_to_retire.instr)
-				    || is_legal_EBREAK (x_rr_to_retire.instr)));
+				    || (is_legal_EBREAK (x_rr_to_retire.instr)
+					&& (! ebreak_halt))));
       rg_epc   <= x_rr_to_retire.pc;
       rg_cause <= ((x_rr_to_retire.instr [20] == 0)
 		   ? cause_ECALL_FROM_M
@@ -279,6 +357,26 @@ module mkRetire (Retire_IFC);
       rg_mode <= MODE_EXCEPTION;
 
       log_Retire_ECALL_EBREAK (rg_flog, x_rr_to_retire);
+   endrule
+
+   // ----------------
+   // RR direct: EBREAK debug-halt
+
+   rule rl_Retire_EBREAK_dbg_halt ((rg_mode == MODE_PIPE)
+				   && (! wrong_path)
+				   && is_Direct
+				   && (! x_rr_to_retire.exception)
+				   && is_legal_EBREAK (x_rr_to_retire.instr)
+				   && ebreak_halt);
+      f_RR_to_Retire.deq;
+      Bool mispredicted   = False;
+      Bool haltreq        = True;
+      // On debug-halt, set next_pc to this PC
+      // so this instr will be retried on resume
+      Bit #(XLEN) next_pc = x_rr_to_retire.pc;
+      // 'fa_redirect_Fetch()' Will set rg_runstate to S5_HALTING1
+      fa_redirect_Fetch (mispredicted, haltreq, x_rr_to_retire, next_pc);
+      $display ("CPU.S5: Halting on EBREAK");
    endrule
 
    // ----------------
@@ -298,7 +396,7 @@ module mkRetire (Retire_IFC);
       /*
       if (x_rr_to_retire.cause == cause_ILLEGAL_INSTRUCTION) begin
 	 wr_log2 (rg_flog,
-		  $format ("    TEMPORARY SIM OPTION: FINISH ON ILLEGAL INSTRUCTION"));
+		  $format ("    TEMPORARY SIM OPTION: FINISH ON ILLEGAL INSTR"));
 	 $finish (1);
       end
       */
@@ -321,7 +419,10 @@ module mkRetire (Retire_IFC);
 
 	 // Redirect Fetch PC if mispredicted
 	 Bool mispredicted = (x_rr_to_retire.predicted_pc != x2.next_pc);
-	 fa_redirect_Fetch (mispredicted, x_rr_to_retire, x2.next_pc);
+	 fa_redirect_Fetch (mispredicted,
+			    (rg_runstate == S5_HALTREQ),
+			    x_rr_to_retire,
+			    x2.next_pc);
 	 csrs.ma_incr_instret;
       end
       else begin
@@ -352,6 +453,7 @@ module mkRetire (Retire_IFC);
 	 Bool mispredicted = (x_rr_to_retire.predicted_pc
 			      != x_rr_to_retire.fallthru_pc);
 	 fa_redirect_Fetch (mispredicted,
+			    (rg_runstate == S5_HALTREQ),
 			    x_rr_to_retire,
 			    x_rr_to_retire.fallthru_pc);
 	 csrs.ma_incr_instret;
@@ -401,6 +503,7 @@ module mkRetire (Retire_IFC);
 	 Bool mispredicted = (x_rr_to_retire.predicted_pc
 			      != x_rr_to_retire.fallthru_pc);
 	 fa_redirect_Fetch (mispredicted,
+			    (rg_runstate == S5_HALTREQ),
 			    x_rr_to_retire,
 			    x_rr_to_retire.fallthru_pc);
 	 csrs.ma_incr_instret;
@@ -493,6 +596,7 @@ module mkRetire (Retire_IFC);
 	 Bool mispredicted = (x_rr_to_retire.predicted_pc
 			      != x_rr_to_retire.fallthru_pc);
 	 fa_redirect_Fetch (mispredicted,
+			    (rg_runstate == S5_HALTREQ),
 			    x_rr_to_retire,
 			    x_rr_to_retire.fallthru_pc);
 	 csrs.ma_incr_instret;
@@ -515,7 +619,11 @@ module mkRetire (Retire_IFC);
 						 is_interrupt,
 						 rg_cause,
 						 rg_tval);
-      fa_redirect_Fetch (True, x_rr_to_retire, tvec_pc);
+      Bool mispredicted = True;
+      fa_redirect_Fetch (mispredicted,
+			 (rg_runstate == S5_HALTREQ),
+			 x_rr_to_retire,
+			 tvec_pc);
       rg_mode <= MODE_PIPE;
       log_Retire_exception (rg_flog, x_rr_to_retire, rg_epc, is_interrupt, rg_cause, rg_tval);
    endrule
@@ -547,6 +655,78 @@ module mkRetire (Retire_IFC);
 
    // Set TIME
    method Action set_TIME (Bit #(64) t) = csrs.set_TIME (t);
+
+
+   // ----------------------------------------------------------------
+   // Debugger control
+   // For haltreq/resumereq, True result means OK, False means error
+
+   method ActionValue #(Bool) haltreq;
+      Bool result = False;
+      if (rg_runstate == S5_RUNNING) begin
+	 rg_runstate   <= S5_HALTREQ;
+	 rg_dcsr_cause <= dcsr_cause_haltreq;
+	 result = True;
+	 $display ("CPU.S5: halt request from debugger");
+      end
+      return result;
+   endmethod
+
+   method ActionValue #(Bool) resumereq;
+      Bool result = False;
+      if (rg_runstate == S5_HALTED) begin
+	 Bit #(1) step = dcsr [index_dcsr_step];
+	 Bit #(2) prv  = dcsr [index_dcsr_prv + 1: index_dcsr_prv];
+
+	 let y = Fetch_from_Retire {next_pc:    dpc,
+				    next_epoch: rg_epoch,
+				    haltreq:    False,
+				    inum:       ?,
+				    pc:         ?,
+				    instr:      ?};
+	 f_Fetch_from_Retire.enq (y);
+
+
+	 if (step == 1'b0) begin
+	    $display ("CPU.S5: resume request from debugger: RUNNING");
+	    rg_runstate   <= S5_RUNNING;
+	    // Note, dcsr_cause_ebreak may be overridden by dcsr_cause_haltreq
+	    rg_dcsr_cause <= dcsr_cause_ebreak;
+	 end
+	 else begin
+	    $display ("CPU.S5: resume request from debugger: SINGLE STEP");
+	    rg_runstate   <= S5_HALTREQ;
+	    rg_dcsr_cause <= dcsr_cause_step;
+	 end
+
+	 result = True;
+	 if (verbosity != 0)
+	    $display ("S5_Retire.method resumereq: PC %0h epoch %0d prv %0d step %0d",
+		      dpc, rg_epoch, prv, step);
+      end
+      return result;
+   endmethod
+
+   method Bool is_running = (rg_runstate != S5_HALTED);
+   method Bool is_halted  = (rg_runstate == S5_HALTED);
+
+   method ActionValue #(Bool) csr_write (Bit #(12) csr_addr, Bit #(XLEN) csr_val);
+      Bool result = False;
+      if (rg_runstate == S5_HALTED) begin
+	 let b <- csrs.csr_write (csr_addr, csr_val);
+	 result = b;
+      end
+      return  result;
+   endmethod
+
+   method ActionValue #(Tuple2 #(Bool, Bit #(XLEN))) csr_read (Bit #(12) csr_addr);
+      if (rg_runstate == S5_HALTED) begin
+	 let t2 <- csrs.csr_read (csr_addr);
+	 return t2;
+      end
+      else
+	 return  tuple2 (False, ?);
+   endmethod
 endmodule
 
 // ****************************************************************

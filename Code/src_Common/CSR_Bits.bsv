@@ -63,6 +63,10 @@ Bit #(12) csr_addr_MCYCLEH   = 'hB80;
 //                 MTIMEH is an MMIO location, not a CSR
 Bit #(12) csr_addr_MINSTRETH = 'hB82;
 
+// Debugger support
+Bit #(12) csr_addr_DCSR      = 'h7B0;
+Bit #(12) csr_addr_DPC       = 'h7B1;
+
 // ****************************************************************
 // MSTATUS fields
 
@@ -144,6 +148,25 @@ function Fmt fshow_cause (Bit #(4) cause);
       default:                              $format ("<cause code %0d>", cause);
    endcase
 endfunction
+
+// ****************************************************************
+// DCSR fields
+
+Integer index_dcsr_ebreakm = 15;
+Integer index_dcsr_ebreaku = 13;
+Integer index_dcsr_cause   =  6;
+Integer index_dcsr_step    =  2;
+Integer index_dcsr_prv     =  0;
+
+// DCSR cause field codes    (halt cause)
+
+Bit #(3) dcsr_cause_ebreak       = 1;
+Bit #(3) dcsr_cause_trigger      = 2;
+Bit #(3) dcsr_cause_haltreq      = 3;
+Bit #(3) dcsr_cause_step         = 4;
+Bit #(3) dcsr_cause_resethaltreq = 5;
+Bit #(3) dcsr_cause_group        = 6;
+Bit #(3) dcsr_cause_other        = 7;
 
 // ****************************************************************
 

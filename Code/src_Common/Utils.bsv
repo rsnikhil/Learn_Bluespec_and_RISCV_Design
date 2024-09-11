@@ -1,4 +1,5 @@
-// Copyright (c) 2023-2024 Bluespec, Inc. All Rights Reserved.
+// Copyright (c) 2023-2024 Rishiyur Nikhil and Bluespec, Inc. All Rights Reserved.
+// Author: Rishiyur S. Nikhil
 
 package Utils;
 
@@ -27,6 +28,7 @@ typedef struct {
    Bit #(XLEN) pc_reset_value;
    Bit #(64)   addr_base_mem;
    Bit #(64)   size_B_mem;
+   Bit #(16)   dbg_listen_socket;
    } Initial_Params
 deriving (Bits);
 

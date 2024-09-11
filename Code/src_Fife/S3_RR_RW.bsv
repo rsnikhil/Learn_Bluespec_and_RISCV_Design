@@ -51,9 +51,15 @@ interface RR_RW_IFC;
 
    // Backward in
    interface FIFOF_I #(RW_from_Retire)  fi_RW_from_Retire;
+
+   // For debugger
+   method Action      gpr_write (Bit #(5) rd, Bit #(XLEN) v);
+   method Bit #(XLEN) gpr_read  (Bit #(5) rs);
 endinterface
 
 // ****************************************************************
+
+Integer verbosity = 0;
 
 (* synthesize *)
 module mkRR_RW (RR_RW_IFC);
@@ -82,8 +88,9 @@ module mkRR_RW (RR_RW_IFC);
    // ================================================================
    // BEHAVIOR: Forward
 
-   rule rl_RR_Dispatch (! f_RW_from_Retire.notEmpty);
-      if (rg_stall_count > 15) begin
+   rule rl_RR_Dispatch ((! f_RW_from_Retire.notEmpty)
+			&& (! f_Decode_to_RR.first.halt_sentinel));
+      if (rg_stall_count == 'hFF) begin
 	 wr_log2 (rg_flog, $format ("CPU.rl_RR_Dispatch: reached %0d stalls; quitting",
 				    rg_stall_count));
 	 $finish (1);
@@ -160,6 +167,18 @@ module mkRR_RW (RR_RW_IFC);
       end
    endrule
 
+   rule rl_RR_Dispatch_halting (f_Decode_to_RR.first.halt_sentinel);
+      f_Decode_to_RR.deq;
+      RR_to_Retire y  = unpack (0);
+      y.exec_tag      = EXEC_TAG_DIRECT;
+      y.epoch         = f_Decode_to_RR.first.epoch;
+      y.halt_sentinel = True;
+      f_RR_to_Retire.enq (y);
+
+      if (verbosity != 0)
+	 $display ("S3_RR_RW_Dispatch: halt requested; sending halt_sentinel to S5_Retire");
+   endrule
+
    // ================================================================
    // BEHAVIOR: Backward: reg write from retire
 
@@ -197,6 +216,15 @@ module mkRR_RW (RR_RW_IFC);
 
    // Backward in
    interface fi_RW_from_Retire = to_FIFOF_I (f_RW_from_Retire);
+
+   // For debugger
+   method Action gpr_write (Bit #(5) rd, Bit #(XLEN) v);
+      gprs.write_dm (rd, v);
+   endmethod
+
+   method Bit #(XLEN) gpr_read (Bit #(5) rs);
+      return gprs.read_dm (rs);
+   endmethod
 endmodule
 
 // ****************************************************************

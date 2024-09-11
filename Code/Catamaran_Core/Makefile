@@ -2,25 +2,34 @@
 # Copyright (c) 2023-2024 Bluespec, Inc.  All Rights Reserved
 # Author: Rishiyur S. Nikhil
 
-$(info INFO: 'make help' shows available targets and current settings.)
+$(info INFO: 'make' or 'make help' shows available targets and current settings.)
 
 # ****************************************************************
 
 .PHONY: help
 help:
+	@echo ""
+	@echo "This makefile is for creating a Verilator simulation executable"
+	@echo "corresponding to a Catamaran FPGA build for AWS F1,"
+	@echo "that combines RTL from $(RTL_CATAMARAN_SANS_CORE)/ and $(RTL_CATAMARAN_CORE)/."
+	@echo "    $(RTL_CATAMARAN_SANS_CORE)/mkAWSteria_System.v    instantiates"
+	@echo "    $(RTL_CATAMARAN_CORE)/mkAWSteria_Core.v"
+	@echo "(AWSteria is an older name for Catamaran.)"
+	@echo ""
+	@echo ""
 	@echo "Targets:"
-	@echo "  help (default)        Show this help info"
-	@echo "  all/$(SIM_EXE_FILE)"
-	@echo "                        From RTL, create simulation exe using Verilator"
+	@echo "  help (default)    Show this help info"
 	@echo ""
-	@echo "  clean                 Remove Verilator and other intermediate files"
-	@echo "  full_clean            clean; remove $(SIM_EXE_FILE) and $(RTL_CATAMARAN_CORE)"
+	@echo "  all               From RTL, create SIM_EXE_FILE using Verilator"
 	@echo ""
-	@echo "  Current settings:"
-	@echo "    SIM_EXE_FILE            = $(SIM_EXE_FILE)"
-	@echo "    RTL_CATAMARAN_CORE      = $(RTL_CATAMARAN_CORE)"
-	@echo "    RTL_CATAMARAN_SANS_CORE = $(RTL_CATAMARAN_SANS_CORE)"
-	@echo "    VERILATOR_WORKING_DIR   = $(VERILATOR_WORKING_DIR)"
+	@echo "  clean             Remove temporary/intermediate files"
+	@echo "  full_clean        clean; and remove SIM_EXE_FILE"
+	@echo ""
+	@echo "  Current settings in this makefile:"
+	@echo "  SIM_EXE_FILE            = $(SIM_EXE_FILE)"
+	@echo "  RTL_CATAMARAN_CORE      = $(RTL_CATAMARAN_CORE)"
+	@echo "  RTL_CATAMARAN_SANS_CORE = $(RTL_CATAMARAN_SANS_CORE)"
+	@echo "  VERILATOR_WORKING_DIR   = $(VERILATOR_WORKING_DIR)"
 
 # Final executable file
 SIM_EXE_FILE ?= exe_HW_AWSF1_sim
@@ -157,6 +166,6 @@ clean:
 
 .PHONY: full_clean
 full_clean: clean
-	rm -r -f  $(SIM_EXE_FILE)  $(RTL_CATAMARAN_CORE)
+	rm -r -f  $(SIM_EXE_FILE)
 
 # ==============================================================

@@ -44,6 +44,14 @@ interface CPU_IFC;
    // Set TIME
    (* always_ready, always_enabled *)
    method Action set_TIME (Bit #(64) t);
+
+   // Debugger support
+   // Requests from/responses to remote debugger
+   interface FIFOF_I #(Dbg_to_CPU_Pkt)   fi_dbg_to_CPU_pkt;
+   interface FIFOF_O #(Dbg_from_CPU_Pkt) fo_dbg_from_CPU_pkt;
+   // Memory requests/responses for remote debugger
+   interface FIFOF_O #(Mem_Req) fo_dbg_to_mem_req;
+   interface FIFOF_I #(Mem_Rsp) fi_dbg_from_mem_rsp;
 endinterface
 
 // ****************************************************************

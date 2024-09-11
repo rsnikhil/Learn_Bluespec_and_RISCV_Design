@@ -54,7 +54,9 @@ function ActionValue #(Decode_to_RR)
 			    imm:          0,
 			    predicted_pc: x_F_to_D.predicted_pc,
 			    epoch:        x_F_to_D.epoch,
-			    inum:         x_F_to_D.inum};
+			    inum:         x_F_to_D.inum,
+			    // Debugger support
+			    halt_sentinel:False };
 
       Bool non_zero_rd = (rd != 0);
 

@@ -45,10 +45,6 @@ import AXI4_Types  :: *;
 import Fabric_Defs :: *;
 
 // ================================================================
-
-Integer verbosity = 0;
-
-// ================================================================
 // Misc. help functions
 
 // ----------------------------------------------------------------
@@ -72,7 +68,9 @@ endfunction
 // MODULE IMPLEMENTATION
 // Non-synthesizable (polymorphic in num_clients_t)
 
-module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
+module mkAdapter_ReqRsp_AXI4 #(String instance_name,
+			       Integer verbosity,
+			       FIFOF_O #(Mem_Req) fo_mem_reqs,
 			       FIFOF_I #(Mem_Rsp) fi_mem_rsps)
    (AXI4_Master_IFC #(Wd_Id, Wd_Addr, Wd_Data, Wd_User));
 
@@ -124,7 +122,7 @@ module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
       end
 
       if (verbosity >= 1) begin
-	 $display ("%0d: %m.rl_rd_req", cur_cycle);
+	 $display ("%0d: %s.rl_rd_req", cur_cycle, instance_name);
 	 $display ("    AXI4_Rd_Addr {araddr %0h arlen %d ",
 		   araddr,  arlen, fshow_AXI4_Size (arsize), "}");
       end
@@ -159,7 +157,7 @@ module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
 
       if (! ok) begin
 	 if (verbosity >= 1) begin
-	    $display ("%0d: ERROR: %m.rl_rd_data", cur_cycle);
+	    $display ("%0d: ERROR: %m.rl_rd_data (%s)", cur_cycle, instance_name);
 	    $display ("    AXI4 error response addr %0h arsize %0h arlen %0h beat %0d",
 		      req.addr, axsize, axlen, rg_rd_beat);
 	    $display ("    ", fshow (rd_data));
@@ -174,7 +172,7 @@ module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
 	 // 2nd beat is only possible in 32-bit fabrics
 	 word64 = { rd_data.rdata [31:0], word64 [31:0] };
       else begin
-	 $display ("%0d: INTERNAL ERROR: %m.rl_rd_data", cur_cycle);
+	 $display ("%0d: INTERNAL ERROR: %m.rl_rd_data (%s)", cur_cycle, instance_name);
 	 $display ("    Unexpected beat number %0d (can only be 0 or 1)", rg_rd_beat);
 	 $finish (1);
       end
@@ -192,7 +190,7 @@ module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
 	    else if (valueOf (Wd_Data) == 64)
 	       shamt_bits = { addr_lsbs [2:0], 3'b000 };
 	    else begin
-	       $display ("%0d: INTERNAL ERROR: %m.rl_rd_data", cur_cycle);
+	       $display ("%0d: INTERNAL ERROR: %m.rl_rd_data (%s)", cur_cycle, instance_name);
 	       $display ("    Unsupported fabric width %0d", valueOf (Wd_Data));
 	       $finish (1);
 	    end
@@ -219,7 +217,7 @@ module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
 	 rg_rd_beat <= rg_rd_beat + 1;
 
       if (verbosity >= 1) begin
-	 $display ("%0d: %m.rl_rd_data: ", cur_cycle);
+	 $display ("%0d: %s.rl_rd_data: ", cur_cycle, instance_name);
 	 $display ("    beat %0d (last %0d) data %0h", rg_rd_beat, last_beat, word64);
       end
    endrule: rl_rd_data
@@ -272,7 +270,7 @@ module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
 	    strb   = (strb   << req.addr [2:0]);
 	 end
 	 else begin
-	    $display ("%0d: ERROR: %m.rl_wr_data", cur_cycle);
+	    $display ("%0d: ERROR: %m.rl_wr_data (%s)", cur_cycle, instance_name);
 	    $display ("    Unsupported fabric width %0d", valueOf (Wd_Data));
 	    $finish (1);
 	 end
@@ -301,7 +299,7 @@ module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
 
       // Debugging
       if (verbosity >= 1) begin
-	 $display ("%0d: %m.rl_wr_req", cur_cycle);
+	 $display ("%0d: %s.rl_wr_req", cur_cycle, instance_name);
 	 $display ("    AXI4_Wr_Addr{awaddr %0h awlen %0d ",
 		   awaddr, awlen,
 		   fshow_AXI4_Size (awsize),
@@ -332,7 +330,7 @@ module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
       rg_wr_strb_buf <= (rg_wr_strb_buf >> valueOf (TDiv #(Wd_Data, 8)));
 
       if (verbosity >= 1) begin
-	 $display ("%0d: %m.rl_wr_data", cur_cycle);
+	 $display ("%0d: %s.rl_wr_data", cur_cycle, instance_name);
 	 $display ("    beat %0d/%0d", rg_wr_beat, rg_awlen);
 	 $display ("    ", fshow (wr_data));
       end
@@ -345,7 +343,7 @@ module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
       let wr_resp <- pop_o (master_xactor.o_wr_resp);
 
       if (rg_wr_rsps_pending == 0) begin
-	 $display ("%0d: %m.rl_wr_rsp:", cur_cycle);
+	 $display ("%0d: %m.rl_wr_rsp (%s):", cur_cycle, instance_name);
 	 $display ("    ERROR write-response when not expecting any");
 	 $display ("    ", fshow (wr_resp));
 	 $finish (1);
@@ -355,13 +353,13 @@ module mkAdapter_ReqRsp_AXI4 #(FIFOF_O #(Mem_Req) fo_mem_reqs,
 	 Bool ok = (wr_resp.bresp == axi4_resp_okay);
 	 if (! ok) begin
 	    ok = False;
-	    $display ("%0d: %m.rl_wr_rsp", cur_cycle);
+	    $display ("%0d: %m.rl_wr_rsp (%s)", cur_cycle, instance_name);
 	    $display ("    ERROR: AXI4 write-response error");
 	    $display ("    ", fshow (wr_resp));
 	 end
 	 else if (verbosity >= 1) begin
-	    $display ("%0d: %m.rl_wr_rsp: pending=%0d, ",
-		      cur_cycle, rg_wr_rsps_pending, fshow (wr_resp));
+	    $display ("%0d: %s.rl_wr_rsp: pending=%0d, ",
+		      cur_cycle, instance_name, rg_wr_rsps_pending, fshow (wr_resp));
 	 end
 
 	 let rsp = Mem_Rsp {rsp_type: (ok ? MEM_RSP_OK : MEM_RSP_ERR),

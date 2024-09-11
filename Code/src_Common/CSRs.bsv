@@ -62,6 +62,17 @@ interface CSRs_IFC;
    // Set TIME
    (* always_ready, always_enabled *)
    method Action set_TIME (Bit #(64) t);
+
+   // Debugger support
+   method ActionValue #(Bool)
+          csr_write (Bit #(12) csr_addr, Bit #(XLEN) csr_val);
+   method ActionValue #(Tuple2 #(Bool, Bit #(XLEN)))
+          csr_read (Bit #(12) csr_addr);
+   method Action save_dpc_dcsr_cause_prv (Bit #(XLEN) pc, Bit #(3) cause, Bit #(2) prv);
+   (* always_ready *)
+   method Bit #(XLEN) get_dpc;
+   (* always_ready *)
+   method Bit #(32)   get_dcsr;
 endinterface
 
 // ****************************************************************
@@ -82,6 +93,10 @@ module mkCSRs (CSRs_IFC);
    Reg #(Bit #(XLEN)) csr_mepc     <- mkReg (0);
    Reg #(Bit #(XLEN)) csr_mcause   <- mkReg (0);
    Reg #(Bit #(XLEN)) csr_mtval    <- mkReg (0);
+
+   Reg #(Bit #(32))   csr_dcsr     <- mkReg (0);
+   Reg #(Bit #(XLEN)) csr_dpc      <- mkRegU;
+   // No csr_dscratch0/csr_dscratch0 because not supporting DM Program Buffer
 
    Reg #(Bit #(64))   csr_minstret <- mkReg (0);
 
@@ -147,6 +162,9 @@ module mkCSRs (CSRs_IFC);
 				   csr_minstret <= {csr_val [31:0], csr_minstret [31:0]};
 				else
 				   exception = True;
+	    // Debugger control
+	    csr_addr_DCSR:     csr_dcsr     <= truncate (csr_val);
+	    csr_addr_DPC:      csr_dpc      <= csr_val;
 
 	    default:            exception = True;
 	 endcase
@@ -208,6 +226,10 @@ module mkCSRs (CSRs_IFC);
 				   y = csr_minstret [63:32];
 				else
 				   exception = True;
+	    // Debugger control
+	    csr_addr_DCSR:     y = zeroExtend (csr_dcsr);
+	    csr_addr_DPC:      y = csr_dpc;
+
 	    default:            exception = True;
 	 endcase
 
@@ -385,6 +407,21 @@ module mkCSRs (CSRs_IFC);
    method Action set_TIME (Bit #(64) t);
       crg_csr_TIME [0] <= t;
    endmethod
+
+   // Debugger support
+   method csr_write (csr_addr, csr_val) = fav_csr_write (csr_addr, csr_val);
+   method csr_read  (csr_addr)          = fav_csr_read (csr_addr);
+
+   method Action save_dpc_dcsr_cause_prv (Bit #(XLEN) pc, Bit #(3) cause, Bit #(2) prv);
+      csr_dpc  <= pc;
+
+      Bit #(XLEN) mask_cause_prv = 'b_1_1100_0011;
+      Bit #(XLEN) new_cause_prv  = { 0, cause, 4'h0, prv };
+      csr_dcsr <= ((csr_dcsr & (~ mask_cause_prv)) | new_cause_prv);
+   endmethod
+
+   method Bit #(32) get_dpc  = csr_dpc;
+   method Bit #(32) get_dcsr = csr_dcsr;
 endmodule
 
 // ****************************************************************

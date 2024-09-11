@@ -50,11 +50,11 @@ import Fn_EX_Int     :: *;
 
 import StmtFSM :: *;
 
-String cpu_name = "Drum (FSM) v0.8 2024-03-12";
+String cpu_name = "Drum v0.81 2024-08-09 (FSM)";
 
 `else
 
-String cpu_name = "Drum (Rules) v0.8 2024-03-12";
+String cpu_name = "Drum v0.81 2024-08-09 (Rules)";
 
 typedef enum {
    A_FETCH,
@@ -380,8 +380,8 @@ module mkCPU (CPU_IFC);
 			    rg_epc, is_interrupt, rg_cause, rg_tval);
    endaction;
 
-   // ================================================================
-   // BEHAVIOR: FSM or Rules
+   // ****************************************************************
+   // BEHAVIOR: FSM or Rules versions
 
 `ifndef DRUM_RULES
 
@@ -394,6 +394,11 @@ module mkCPU (CPU_IFC);
 `endif
 
    // ****************************************************************
+   // BEHAVIOR: Debugger support
+
+   `include "CPU_Dbg.bsv"
+
+   // ****************************************************************
    // INTERFACE
 
    method Action init (Initial_Params initial_params);
@@ -402,8 +407,18 @@ module mkCPU (CPU_IFC);
       rg_pc      <= initial_params.pc_reset_value;
       rg_running <= True;
       csrs.init (initial_params);
+
+      $display ("================================================================");
       $display ("%s: starting execution at PC %0h",
 		cpu_name, initial_params.pc_reset_value);
+
+      if (initial_params.flog != InvalidFile) begin
+	 $fdisplay (initial_params.flog,
+		    "================================================================");
+	 $fdisplay (initial_params.flog, "%s: starting execution at PC %0h",
+		    cpu_name, initial_params.pc_reset_value);
+      end
+
    endmethod
 
    // IMem
@@ -421,6 +436,14 @@ module mkCPU (CPU_IFC);
 
    // Set TIME
    method Action set_TIME (Bit #(64) t) = csrs.set_TIME (t);
+
+   // Debugger support
+   // Requests from/responses to remote debugger
+   interface fi_dbg_to_CPU_pkt   = to_FIFOF_I (f_dbg_to_CPU_pkt);
+   interface fo_dbg_from_CPU_pkt = to_FIFOF_O (f_dbg_from_CPU_pkt);
+   // Memory requests/responses for remote debugger
+   interface fo_dbg_to_mem_req   = to_FIFOF_O (f_dbg_to_mem_req);
+   interface fi_dbg_from_mem_rsp = to_FIFOF_I (f_dbg_from_mem_rsp);
 endmodule
 
 // ****************************************************************

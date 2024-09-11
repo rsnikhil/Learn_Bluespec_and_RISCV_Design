@@ -64,10 +64,11 @@ import TV_Info           :: *;    // Tandem Verification info
 // ----------------
 // RISC-V CPU and related IPs
 
-import Utils       :: *;
-import Mem_Req_Rsp :: *;
-import CPU_IFC     :: *;    // Fife/Drum CPU interface
-import CPU         :: *;    // Fife/Drum CPU
+import Utils        :: *;
+import Mem_Req_Rsp  :: *;
+import CPU_IFC      :: *;    // Fife/Drum CPU interface
+import CPU          :: *;    // Fife/Drum CPU
+import Store_Buffer :: *;    // Used for Fife; unused for Drum
 
 import Adapter_ReqRsp_AXI4 :: *;    // Adapter CPU Mem_Req/Mem_Rsp to AXI4
 
@@ -116,12 +117,31 @@ module mkCatamaran_Core_Inner (Catamaran_Core_Inner_IFC);
    // The CPU
    CPU_IFC cpu <- mkCPU;
 
-   // Adapters from CPU IMem and DMem Req/Rsp to AXI4
-   AXI4_Master_IFC #(Wd_Id, Wd_Addr, Wd_Data, Wd_User)
-      imem_AXI4_M <- mkAdapter_ReqRsp_AXI4 (cpu.fo_IMem_req, cpu.fi_IMem_rsp);
+   // Store buffer for speculative mem ops
+   Store_Buffer_IFC #(4) spec_sto_buf <- mkStore_Buffer (cpu.fo_DMem_S_req,
+							 cpu.fi_DMem_S_rsp,
+							 cpu.fo_DMem_S_commit);
 
+   // Adapter from CPU IMem to AXI4
    AXI4_Master_IFC #(Wd_Id, Wd_Addr, Wd_Data, Wd_User)
-      dmem_AXI4_M <- mkAdapter_ReqRsp_AXI4 (cpu.fo_DMem_req, cpu.fi_DMem_rsp);
+      imem_AXI4_M <- mkAdapter_ReqRsp_AXI4 ("IMem AXI4 Adapter",
+					    0,    // verbosity
+					    cpu.fo_IMem_req,
+					    cpu.fi_IMem_rsp);
+
+   // Adapter from CPU speculative DMem to AXI4
+   AXI4_Master_IFC #(Wd_Id, Wd_Addr, Wd_Data, Wd_User)
+      dmem_S_AXI4_M <- mkAdapter_ReqRsp_AXI4 ("DMem_S AXI4 Adapter",
+					      0,    // verbosity
+					      spec_sto_buf.fo_mem_req,
+					      spec_sto_buf.fi_mem_rsp);
+
+   // Adapter from CPU non-speculative DMem to AXI4
+   AXI4_Master_IFC #(Wd_Id, Wd_Addr, Wd_Data, Wd_User)
+      dmem_AXI4_M <- mkAdapter_ReqRsp_AXI4 ("DMem AXI4 Adapter",
+					    0,    // verbosity
+					    cpu.fo_DMem_req,
+					    cpu.fi_DMem_rsp);
 
    // A fabric for connecting CPU to {System, Near_Mem_IO
    Core_MMIO_Fabric_IFC  mmio_fabric <- mkCore_MMIO_Fabric;
@@ -133,10 +153,9 @@ module mkCatamaran_Core_Inner (Catamaran_Core_Inner_IFC);
    // Connect CPU to mmio fabric, and mmio fabric to CLINT
 
    // Connect CPU's memory interface to mmio fabric
-   mkConnection (imem_AXI4_M, mmio_fabric.v_from_masters [cpu_imem_master_num]);
-   mkConnection (dmem_AXI4_M, mmio_fabric.v_from_masters [cpu_dmem_master_num]);
-
-   // mkConnection (cva6_core.axi4_m, mmio_fabric.v_from_masters [cpu_mmio_master_num]);
+   mkConnection (imem_AXI4_M,   mmio_fabric.v_from_masters [cpu_imem_master_num]);
+   mkConnection (dmem_S_AXI4_M, mmio_fabric.v_from_masters [cpu_dmem_S_master_num]);
+   mkConnection (dmem_AXI4_M,   mmio_fabric.v_from_masters [cpu_dmem_master_num]);
 
    // Targets on mmio fabric
    mkConnection (mmio_fabric.v_to_slaves [near_mem_io_target_num], clint.axi4_slave);
@@ -181,8 +200,12 @@ module mkCatamaran_Core_Inner (Catamaran_Core_Inner_IFC);
       else
 	 $display ("INFO: No logfile");
       let init_params = Initial_Params {flog:           f,
-					pc_reset_value: 'h_8000_0000};
+					pc_reset_value: 'h_8000_0000,
+					addr_base_mem:  'h_8000_0000,
+					size_B_mem:     'h_1000_0000};
+
       cpu.init (init_params);
+      spec_sto_buf.init (init_params);
 
       rg_module_state <= MODULE_STATE_READY;
 

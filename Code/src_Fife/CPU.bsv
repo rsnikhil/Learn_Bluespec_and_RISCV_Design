@@ -13,6 +13,7 @@ package CPU;
 
 import FIFOF       :: *;
 import Connectable :: *;
+import StmtFSM     :: *;
 
 // ----------------
 // Imports from 'vendor' libs
@@ -24,6 +25,9 @@ import Semi_FIFOF :: *;
 // Local imports
 
 import Utils       :: *;
+import Arch        :: *;
+import Instr_Bits  :: *;
+import CSR_Bits    :: *;
 import Mem_Req_Rsp :: *;
 
 // Stages
@@ -39,7 +43,7 @@ import S5_Retire     :: *;
 
 // ****************************************************************
 
-String cpu_name = "Fife v0.7 2024-03-01";
+String cpu_name = "Fife v0.85 2024-09-08";
 
 // ****************************************************************
 
@@ -86,8 +90,14 @@ module mkCPU (CPU_IFC);
    mkConnection (stage_Retire.fo_RW_from_Retire, stage_RR_RW.fi_RW_from_Retire);
 
    // ================================================================
-   // BEHAVIOR: all behavior is inside the above modules
-   // ================================================================
+   // BEHAVIOR: all normal running behavior is inside the above modules
+
+   // ****************************************************************
+   // BEHAVIOR: Debugger support
+
+   `include "CPU_Dbg.bsv"
+
+   // ****************************************************************
    // INTERFACE
 
    method Action init (Initial_Params initial_params);
@@ -99,6 +109,18 @@ module mkCPU (CPU_IFC);
       stage_EX_Control.init (initial_params);
       stage_EX_Int.init (initial_params);
       stage_Retire.init (initial_params);
+
+      $display ("================================================================");
+      $display ("%s: starting execution at PC %0h",
+		cpu_name, initial_params.pc_reset_value);
+
+      if (initial_params.flog != InvalidFile) begin
+	 $fdisplay (initial_params.flog,
+		    "================================================================");
+	 $fdisplay (initial_params.flog, "%s: starting execution at PC %0h",
+		    cpu_name, initial_params.pc_reset_value);
+      end
+
    endmethod
 
    // IMem
@@ -116,8 +138,15 @@ module mkCPU (CPU_IFC);
 
    // Set TIME
    method Action set_TIME (Bit #(64) t) = stage_Retire.set_TIME (t);
-endmodule
 
+   // Debugger support
+   // Requests from/responses to remote debugger
+   interface fi_dbg_to_CPU_pkt   = to_FIFOF_I (f_dbg_to_CPU_pkt);
+   interface fo_dbg_from_CPU_pkt = to_FIFOF_O (f_dbg_from_CPU_pkt);
+   // Memory requests/responses for remote debugger
+   interface fo_dbg_to_mem_req   = to_FIFOF_O (f_dbg_to_mem_req);
+   interface fi_dbg_from_mem_rsp = to_FIFOF_I (f_dbg_from_mem_rsp);
+endmodule
 
 // ****************************************************************
 

@@ -352,14 +352,15 @@ module mkStore_Buffer #(FIFOF_O #(Mem_Req)               fo_req_from_CPU,
       f_req_to_mem.enq (cur_CPU_req);
       rg_fsm_state <= FSM_STATE_RD_RSP;
 
-      if (verbosity != 0)
-	 wr_log (rg_logfile, $format ("Spec_Store_Buf.rl_rd_req_mem: ",
-				      fshow_Mem_Req (cur_CPU_req)));
+      if (verbosity != 0) begin
+	 wr_log (rg_logfile, $format ("Spec_Store_Buf.rl_rd_req_mem:"));
+	 wr_log_cont (rg_logfile, $format ("        ", fshow_Mem_Req (cur_CPU_req)));
+      end
    endrule
 
    // Update data from memory with updates from store buffer and respond to CPU
-   rule rl_rd_rsp_ok ((rg_fsm_state == FSM_STATE_RD_RSP)
-		      && (cur_mem_rsp.req_type == funct5_LOAD));
+   rule rl_rd_rsp ((rg_fsm_state == FSM_STATE_RD_RSP)
+		   && (cur_mem_rsp.req_type == funct5_LOAD));
 
       let shamt            = fn_shamt (cur_mem_rsp.addr);
       let shifted_upd_data = upd_data >> shamt;
@@ -380,7 +381,7 @@ module mkStore_Buffer #(FIFOF_O #(Mem_Req)               fo_req_from_CPU,
       rg_fsm_state <= FSM_STATE_IDLE;
 
       if (verbosity != 0) begin
-	 wr_log (rg_logfile, $format ("Spec_Store_Buf.rl_rd_rsp_ok"));
+	 wr_log (rg_logfile, $format ("Spec_Store_Buf.rl_rd_rsp"));
 	 wr_log_cont (rg_logfile,
 		      $format ("    cur_CPU_req: ", fshow_Mem_Req (cur_CPU_req)));
 	 wr_log_cont (rg_logfile,

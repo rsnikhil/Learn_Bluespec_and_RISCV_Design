@@ -52,7 +52,11 @@ module mkMems_Devices #(FIFOF_O #(Mem_Req) fo_IMem_req,
 			FIFOF_O #(Retire_to_DMem_Commit) fo_DMem_commit,
 
 			FIFOF_O #(Mem_Req) fo_MMIO_req,
-			FIFOF_I #(Mem_Rsp) fi_MMIO_rsp)
+			FIFOF_I #(Mem_Rsp) fi_MMIO_rsp,
+
+			// From/to remote debugger
+			FIFOF_O #(Mem_Req) fo_Dbg_req,
+			FIFOF_I #(Mem_Rsp) fi_Dbg_rsp)
                       (Mems_Devices_IFC);
 
    // Store buffer for speculative mem ops
@@ -123,6 +127,12 @@ module mkMems_Devices #(FIFOF_O #(Mem_Req) fo_IMem_req,
    rule rl_MMIO_req_rsp (rg_running);
       Bit #(32) client = 2;
       fa_mem_req_rsp (fo_MMIO_req, fi_MMIO_rsp, CLIENT_MMIO, 1);
+   endrule
+
+   // Remote debugger mem ops (note: using CLIENT_MMIO)
+   rule rl_Dbg_req_rsp (rg_running);
+      Bit #(32) client = 2;
+      fa_mem_req_rsp (fo_Dbg_req, fi_Dbg_rsp, CLIENT_MMIO, 1);
    endrule
 
    // ================================================================

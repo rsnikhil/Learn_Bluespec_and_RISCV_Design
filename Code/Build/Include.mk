@@ -55,6 +55,8 @@ BSCFLAGS = -D $(RV) \
 
 C_FILES  = $(REPO)/src_Top/C_Mems_Devices.c
 C_FILES += $(REPO)/src_Top/UART_model.c
+C_FILES += $(REPO)/vendor/EDB/Dbg_Pkts.c
+C_FILES += $(REPO)/vendor/EDB/edbstub.c
 
 # Only needed if we import C code
 BSC_C_FLAGS += -Xl -v  -Xc -O3  -Xc++ -O3
@@ -104,7 +106,7 @@ v_link: build_v verilog
 .PHONY: v_run
 v_run:
 	@echo "INFO: Simulation ..."
-	./$(EXEFILE)_verilator  +log
+	./$(EXEFILE)_verilator
 	@echo "INFO: Finished Simulation"
 
 .PHONY: v_run_hello
@@ -112,7 +114,7 @@ v_run_hello:
 	@echo "INFO: Simulation of Hello World! ..."
 	ln -s -f ../../Tools/Hello_World_Example_Code/hello.RV32.bare.memhex32 \
 		test.memhex32
-	./$(EXEFILE)_verilator  +log
+	./$(EXEFILE)_verilator
 	@echo "INFO: Finished Simulation of Hello World! ..."
 
 .PHONY: v_run_add
@@ -120,7 +122,7 @@ v_run_add:
 	@echo "INFO: Simulation of add ISA test ..."
 	ln -s -f ../../Tools/rv32ui-p-add_Example_Code/rv32ui-p-add.memhex32 \
 		test.memhex32
-	./$(EXEFILE)_verilator  +log
+	./$(EXEFILE)_verilator
 	@echo "INFO: Finished Simulation of add ISA test ..."
 
 # ****************************************************************
@@ -158,7 +160,7 @@ b_link: build_b C_for_bsim
 .PHONY: b_run
 b_run:
 	@echo "INFO: Simulation ..."
-	./$(EXEFILE)_bsim  +log
+	./$(EXEFILE)_bsim
 	@echo "INFO: Finished Simulation"
 
 .PHONY: b_run_hello
@@ -166,7 +168,7 @@ b_run_hello:
 	@echo "INFO: Simulation of Hello World! ..."
 	ln -s -f ../../Tools/Hello_World_Example_Code/hello.RV32.bare.memhex32 \
 		test.memhex32
-	./$(EXEFILE)_bsim  +log
+	./$(EXEFILE)_bsim
 	@echo "INFO: Finished Simulation of Hello World! ..."
 
 .PHONY: b_run_add
@@ -174,7 +176,7 @@ b_run_add:
 	@echo "INFO: Simulation of add ISA test ..."
 	ln -s -f ../../Tools/rv32ui-p-add_Example_Code/rv32ui-p-add.memhex32 \
 		test.memhex32
-	./$(EXEFILE)_bsim  +log
+	./$(EXEFILE)_bsim
 	@echo "INFO: Finished Simulation of add ISA test ..."
 
 # ****************************************************************
