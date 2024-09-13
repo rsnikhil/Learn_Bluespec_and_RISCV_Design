@@ -1,13 +1,12 @@
 // Copyright (c) 2023-2024 Bluespec, Inc.  All Rights Reserved.
 // Author: Rishiyur S. Nikhil
 
-// WARNING! WARNING! WARNING!
-// This is just a placeholder file, needs to be fixed up (2024-09-11).
-
 // ****************************************************************
 // This is a BSV 'include' file, not a standalone BSV package.
 // This is part of the Fife CPU top-level.
 
+   // verbosity_CPU_Dbg = 1 for all transactions except mem
+   //                     2 to also include mem transactions
    Integer verbosity_CPU_Dbg = 0;
 
    // Requests from/Responses to remote debugger
@@ -24,67 +23,64 @@
 
    let pkt_in = f_dbg_to_CPU_pkt.first;
 
-   Stmt stmt_HALTREQ =
+   // ----------------
+   Stmt stmt_haltreq =
    seq
-      if (verbosity_CPU_Dbg != 0)
-	 $display ("CPU_Dbg.stmt_HALTREQ");
       action
-	 // DELETE let ok <- stage_Retire.haltreq;
-	 let ok = True;
-	 rg_ok <= ok;
-      endaction
-      if (! rg_ok)
-	 action
-	    let rsp = Dbg_from_CPU_Pkt {pkt_type: Dbg_from_CPU_ERR,
-					payload:  ?};
+	 if (rg_runstate != CPU_RUNNING) begin
+	    $display ("ERROR: CPU HALT req: not in RUNNING state");
+	    let rsp = Dbg_from_CPU_Pkt {pkt_type: Dbg_from_CPU_ERR, payload: ?};
 	    f_dbg_from_CPU_pkt.enq (rsp);
-	 endaction
-      else
-         rg_await_halted <= True;
-      f_dbg_to_CPU_pkt.deq;
+	 end
+	 else begin
+	    $display ("CPU: HALT req");
+	    rg_runstate     <= CPU_HALTREQ;
+	    rg_dcsr_cause   <= dcsr_cause_haltreq;
+	    rg_await_halted <= True;
+	 end
+	 f_dbg_to_CPU_pkt.deq;
+      endaction
    endseq;
 
+   // ----------------
    Stmt stmt_resumereq =
    seq
-      if (verbosity_CPU_Dbg != 0)
-	 $display ("CPU_Dbg.stmt_resumereq");
       action
-	 // DELETE let ok <- stage_Retire.resumereq;
-	 let ok = True;
-	 rg_ok <= ok;
+	 Dbg_from_CPU_Pkt_type rsp_pkt_type;
+	 if (rg_runstate != CPU_HALTED) begin
+	    $display ("ERROR: CPU RESUME req: not in HALTED state");
+	    rsp_pkt_type = Dbg_from_CPU_ERR;
+	 end
+	 else begin
+	    Bit #(2) prv   = dcsr [index_dcsr_prv + 1: index_dcsr_prv];
+	    rg_pc         <= dpc;
+	    $display ("CPU: RESUME request: RUNNING PC:%0x prv:%0d", dpc, prv);
+	    rg_runstate   <= CPU_RUNNING;
+	    rg_dcsr_cause <= dcsr_cause_ebreak;    // default halt cause
+            rg_await_halted <= True;
+	    rsp_pkt_type = Dbg_from_CPU_RUNNING;
+	 end
+	 let rsp = Dbg_from_CPU_Pkt {pkt_type: rsp_pkt_type, payload:  ?};
+	 f_dbg_from_CPU_pkt.enq (rsp);
+	 f_dbg_to_CPU_pkt.deq;
       endaction
-      if (! rg_ok)
-	 action
-	    let rsp = Dbg_from_CPU_Pkt {pkt_type: Dbg_from_CPU_ERR,
-					payload:  ?};
-	    f_dbg_from_CPU_pkt.enq (rsp);
-	 endaction
-      else
-	 seq
-	    // DELETE await (stage_Retire.is_running);
-	    action
-	       let rsp = Dbg_from_CPU_Pkt {pkt_type: Dbg_from_CPU_RUNNING,
-					   payload:  ?};
-	       f_dbg_from_CPU_pkt.enq (rsp);
-               rg_await_halted <= True;
-	    endaction
-	 endseq
-      f_dbg_to_CPU_pkt.deq;
    endseq;
 
    Stmt stmt_rw_gpr =
    seq
-      if (verbosity_CPU_Dbg != 0)
-	 $display ("CPU_Dbg.stmt_rw_gpr");
-      if ((pkt_in.rw_op == Dbg_RW_READ) && (pkt_in.rw_addr < 32))
-	 rg_data <= 0; // DELETE stage_RR_RW.gpr_read (truncate (pkt_in.rw_addr));
-      else if (pkt_in.rw_addr < 32)
-	 noAction; // DELETE stage_RR_RW.gpr_write (truncate (pkt_in.rw_addr), pkt_in.rw_wdata);
       action
+	 Bit #(XLEN) rdata = ?;
+	 if (verbosity_CPU_Dbg != 0)
+	    $display ("CPU_Dbg.stmt_rw_gpr");
+	 if ((pkt_in.rw_op == Dbg_RW_READ) && (pkt_in.rw_addr < 32))
+	    rdata = gprs.read_dm (truncate (pkt_in.rw_addr));
+	 else if (pkt_in.rw_addr < 32)
+	    gprs.write_dm (truncate (pkt_in.rw_addr), pkt_in.rw_wdata);
+
 	 let rsp = Dbg_from_CPU_Pkt {pkt_type: ((pkt_in.rw_addr < 32)
 						? Dbg_from_CPU_RW_OK
 						: Dbg_from_CPU_ERR),
-				     payload:  rg_data};
+				     payload:  rdata};
 	 f_dbg_to_CPU_pkt.deq;
 	 f_dbg_from_CPU_pkt.enq (rsp);
       endaction
@@ -92,30 +88,29 @@
 
    Stmt stmt_rw_csr =
    seq
-      if (verbosity_CPU_Dbg != 0)
-	 $display ("CPU_Dbg.stmt_rw_csr");
-      if (pkt_in.rw_op == Dbg_RW_READ)
-	 action
-	    // DELETE match { .exc, .y } <- stage_Retire.csr_read (truncate (pkt_in.rw_addr));
-	    let exc = False;
-	    let y   = 0;
-	    rg_ok   <= exc;
-	    rg_data <= y;
-	 endaction
-      else
-	 action
-	    // DELETE let exc <- stage_Retire.csr_write (truncate (pkt_in.rw_addr), pkt_in.rw_wdata);
-	    let exc = False;
-	    rg_ok   <= (! exc);
-	    rg_data <= pkt_in.rw_wdata;
-	 endaction
       action
-	 let rsp = Dbg_from_CPU_Pkt {pkt_type: (rg_ok
+	 Bool        ok;
+	 Bit #(XLEN) rdata = ?;
+	 if (pkt_in.rw_op == Dbg_RW_READ) begin
+	    match { .exc, .y } <- csrs.csr_read (truncate (pkt_in.rw_addr));
+	    ok    = (! exc);
+	    rdata = y;
+	    if (verbosity_CPU_Dbg != 0)
+	       $display ("CPU_Dbg: read CSR %0x => ok:%0d  rdata %0x",
+			 pkt_in.rw_addr, ok, rdata);
+	 end
+	 else begin
+	    if (verbosity_CPU_Dbg != 0)
+	       $display ("CPU_Dbg: write CSR %0x <= %0x", pkt_in.rw_addr, pkt_in.rw_wdata);
+	    let exc <- csrs.csr_write (truncate (pkt_in.rw_addr), pkt_in.rw_wdata);
+	    ok = (! exc);
+	 end
+	 let rsp = Dbg_from_CPU_Pkt {pkt_type: (ok
 						? Dbg_from_CPU_RW_OK
 						: Dbg_from_CPU_ERR),
-				     payload:  rg_data};
-	 f_dbg_to_CPU_pkt.deq;
+				     payload:  rdata};
 	 f_dbg_from_CPU_pkt.enq (rsp);
+	 f_dbg_to_CPU_pkt.deq;
       endaction
    endseq;
 
@@ -137,7 +132,7 @@
 				pc: 0,
 				instr: 0};
 	 f_dbg_to_mem_req.enq (mem_req);
-	 if (verbosity_CPU_Dbg != 0) begin
+	 if (verbosity_CPU_Dbg > 1) begin
 	    $display ("CPU_Dbg.stmt_rw_mem");
 	    $display ("    ", fshow_Mem_Req (mem_req));
 	 end
@@ -151,7 +146,7 @@
 			     payload: truncate (mem_rsp.data)};
 	 f_dbg_to_CPU_pkt.deq;
 	 f_dbg_from_CPU_pkt.enq (dbg_rsp);
-	 if (verbosity_CPU_Dbg != 0)
+	 if (verbosity_CPU_Dbg > 1)
 	    $display ("    ",
 		      fshow_Mem_Rsp (mem_rsp, pkt_in.rw_op == Dbg_RW_READ));
       endaction
@@ -160,7 +155,7 @@
    Stmt stmt_dbg_req_pkt =
    seq
       if (pkt_in.pkt_type == Dbg_to_CPU_HALTREQ)
-	 stmt_HALTREQ;
+	 stmt_haltreq;
       else if (pkt_in.pkt_type == Dbg_to_CPU_RESUMEREQ)
 	 stmt_resumereq;
       else if (pkt_in.pkt_type == Dbg_to_CPU_RW)
@@ -184,11 +179,10 @@
 	    stmt_dbg_req_pkt;
       endseq);
 
-   Bool is_halted = False;
+   // This rule waits for HALTED state,
+   // then sends a HALTED response to the debugger
    rule rl_await_halted (rg_await_halted && is_halted); // stage_Retire.is_halted);
-      // DELETE match { .exc, .dcsr } <- stage_Retire.csr_read (csr_addr_DCSR);
-      Bool      exc  = False;
-      Bit #(32) dcsr = 0;
+      match { .exc, .dcsr } <- csrs.csr_read (csr_addr_DCSR);
       let rsp = Dbg_from_CPU_Pkt {pkt_type: Dbg_from_CPU_HALTED,
 				  payload:  zeroExtend (dcsr)};
       f_dbg_from_CPU_pkt.enq (rsp);

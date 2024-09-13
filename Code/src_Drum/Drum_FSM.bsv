@@ -39,8 +39,14 @@
    endseq;
 
    mkAutoFSM (seq
-                 await (rg_running);
-		 while (True) exec_one_instr;
+		 while (True)
+		    if (rg_runstate == CPU_HALTREQ)
+		       action
+			  csrs.save_dpc_dcsr_cause_prv (rg_pc, rg_dcsr_cause, priv_M);
+			  rg_runstate <= CPU_HALTED;
+		       endaction
+		    else
+		       exec_one_instr;
 	      endseq);
 
 // ****************************************************************

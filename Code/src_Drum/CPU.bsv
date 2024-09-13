@@ -44,6 +44,17 @@ import Fn_EX_Control :: *;
 import Fn_EX_Int     :: *;
 
 // ****************************************************************
+// Debugger control
+
+typedef enum {CPU_RUNNING,
+              CPU_HALTREQ,     // halt requested
+              CPU_HALTED
+} CPU_RunState
+deriving (Bits, Eq, FShow);
+
+Integer verbosity = 0;
+
+// ****************************************************************
 // Choose either FSM version or explicit-rules version
 
 `ifndef DRUM_RULES
@@ -78,7 +89,7 @@ module mkCPU (CPU_IFC);
    // STATE
 
    // Don't run until the PC (and other things) are initialized
-   Reg #(Bool) rg_running <- mkReg (False);
+   Reg #(CPU_RunState) rg_runstate <- mkReg (CPU_HALTED);
 
    // For debugging in simulation only
    Reg #(File) rg_flog <- mkReg (InvalidFile);
@@ -86,10 +97,10 @@ module mkCPU (CPU_IFC);
    Reg #(Bit #(64)) rg_inum <- mkReg (0);    // For debugging only
 
    // The Program Counter
-   Reg #(Bit #(XLEN)) rg_pc   <- mkReg (0);
+   Reg #(Bit #(XLEN)) rg_pc <- mkReg (0);
 
    // General-Purpose Registers (GPRs)
-   GPRs_IFC #(XLEN)  gprs <- mkGPRs_synth;
+   GPRs_IFC #(XLEN) gprs <- mkGPRs_synth;
 
    // Control-and-Status Registers (CSRs)
    CSRs_IFC csrs <- mkCSRs;
@@ -113,6 +124,23 @@ module mkCPU (CPU_IFC);
    Reg #(Bit #(XLEN)) rg_epc       <- mkRegU;
    Reg #(Bit #(4))    rg_cause     <- mkRegU;
    Reg #(Bit #(XLEN)) rg_tval      <- mkRegU;
+
+   // ================================================================
+   // Debugger control
+   Reg #(Bit #(XLEN)) rg_dpc        <- mkRegU;
+   Reg #(Bit #(3))    rg_dcsr_cause <- mkReg (dcsr_cause_ebreak);
+   Reg #(Bit #(2))    rg_dcsr_prv   <- mkRegU;
+
+   Bit #(32) dpc  = csrs.get_dpc;
+   Bit #(32) dcsr = csrs.get_dcsr;
+
+   // TODO (IMPROVEMENT) 'ebreak_halt' only depends on dcsr.ebreakm
+   // while only supporting M priv. For M+U, M+S+U, M+VS+VU+U also
+   // depends on other dcsr ebreak bits
+   Bool ebreak_halt = (dcsr [index_dcsr_ebreakm] == 1'b1);
+
+   Bool is_running = (rg_runstate != CPU_HALTED);
+   Bool is_halted  = (rg_runstate == CPU_HALTED);
 
    // ****************************************************************
    // BEHAVIOR: Actions
@@ -158,6 +186,15 @@ module mkCPU (CPU_IFC);
    // ----------------------------------------------------------------
    Action a_Fetch =
    action
+      await (rg_runstate != CPU_HALTED);
+
+      Bit #(1) step = dcsr [index_dcsr_step];
+      if (step == 1'b1) begin
+	 rg_runstate   <= CPU_HALTREQ;
+	 rg_dcsr_cause <= dcsr_cause_step;
+	 $display ("CPU: SINGLE STEP PC:%0x", rg_pc);
+      end
+
 
       let predicted_pc = 0;
       let epoch        = 0;
@@ -243,7 +280,8 @@ module mkCPU (CPU_IFC);
       end
       // ----------------
       else if (is_legal_ECALL (x_direct.instr)
-	       || is_legal_EBREAK (x_direct.instr))
+	       || (is_legal_EBREAK (x_direct.instr)
+		   && (! ebreak_halt)))
 	 begin
 	    let cause = ((x_direct.instr [20] == 0)
 			 ? cause_ECALL_FROM_M
@@ -254,6 +292,14 @@ module mkCPU (CPU_IFC);
 	    csrs.ma_incr_instret;
 	    log_Retire_ECALL_EBREAK (rg_flog, x_direct);
 	 end
+      // ----------------
+      else if (is_legal_EBREAK (x_direct.instr)
+	       && ebreak_halt)
+	 begin
+	    rg_runstate <= CPU_HALTREQ;
+	    $display ("CPU: EBREAK halt for debugger at PC %0x", rg_pc);
+	 end
+      // ----------------
       else begin
 	 wr_log2 (rg_flog, $format ("CPU.EX.Direct: IMPOSSIBLE"));
 	 $finish (1);
@@ -402,10 +448,10 @@ module mkCPU (CPU_IFC);
    // INTERFACE
 
    method Action init (Initial_Params initial_params);
-      rg_flog    <= initial_params.flog;
+      rg_flog     <= initial_params.flog;
 
-      rg_pc      <= initial_params.pc_reset_value;
-      rg_running <= True;
+      rg_pc       <= initial_params.pc_reset_value;
+      rg_runstate <= CPU_RUNNING;
       csrs.init (initial_params);
 
       $display ("================================================================");

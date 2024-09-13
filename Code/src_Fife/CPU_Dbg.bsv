@@ -21,10 +21,9 @@
 
    let pkt_in = f_dbg_to_CPU_pkt.first;
 
-   Stmt stmt_HALTREQ =
+   Stmt stmt_haltreq =
    seq
-      if (verbosity_CPU_Dbg != 0)
-	 $display ("CPU_Dbg.stmt_HALTREQ");
+      $display ("CPU: HALT req");
       action
 	 let ok <- stage_Retire.haltreq;
 	 rg_ok <= ok;
@@ -42,8 +41,7 @@
 
    Stmt stmt_resumereq =
    seq
-      if (verbosity_CPU_Dbg != 0)
-	 $display ("CPU_Dbg.stmt_resumereq");
+      $display ("CPU: RESUME request: RUNNING");
       action
 	 let ok <- stage_Retire.resumereq;
 	 rg_ok <= ok;
@@ -131,7 +129,7 @@
 				pc: 0,
 				instr: 0};
 	 f_dbg_to_mem_req.enq (mem_req);
-	 if (verbosity_CPU_Dbg != 0) begin
+	 if (verbosity_CPU_Dbg > 1) begin
 	    $display ("CPU_Dbg.stmt_rw_mem");
 	    $display ("    ", fshow_Mem_Req (mem_req));
 	 end
@@ -154,7 +152,7 @@
    Stmt stmt_dbg_req_pkt =
    seq
       if (pkt_in.pkt_type == Dbg_to_CPU_HALTREQ)
-	 stmt_HALTREQ;
+	 stmt_haltreq;
       else if (pkt_in.pkt_type == Dbg_to_CPU_RESUMEREQ)
 	 stmt_resumereq;
       else if (pkt_in.pkt_type == Dbg_to_CPU_RW)
