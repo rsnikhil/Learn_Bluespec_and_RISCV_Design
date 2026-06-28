@@ -24,6 +24,8 @@ import Mem_Req_Rsp    :: *;
 import Inter_Stage    :: *;
 import RVFI_DII_Types :: *;
 
+import RVFI_BSV_to_RTL :: *;
+
 // ****************************************************************
 
 interface CPU_IFC;
@@ -52,7 +54,10 @@ interface CPU_IFC;
 
    // ----------------------------------------------------------------
    // Output stream of RVFI reports (to verifier/logger)
-   interface FIFOF_O #(RVFI_DII_Execution #(XLEN, 64)) fo_rvfi_reports;
+
+   // OLD: interface FIFOF_O #(RVFI_DII_Execution #(XLEN, 64)) fo_rvfi_reports;
+
+   interface RVFI_RTL_M_IFC #(XLEN, 64) rvfi_RTL_ports;
 
    // ----------------------------------------------------------------
    // Debugger support

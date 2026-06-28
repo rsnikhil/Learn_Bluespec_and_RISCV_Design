@@ -146,7 +146,10 @@ module mkCPU (CPU_IFC);
 
    // ----------------------------------------------------------------
    // Output stream of RVFI reports (to verifier/logger)
-   interface fo_rvfi_reports = stage_Retire.fo_rvfi_reports;
+
+   // OLD: interface fo_rvfi_reports = stage_Retire.fo_rvfi_reports;
+
+   interface rvfi_RTL_ports = stage_Retire.rvfi_RTL_ports;
 
    // ----------------------------------------------------------------
    // Debugger support

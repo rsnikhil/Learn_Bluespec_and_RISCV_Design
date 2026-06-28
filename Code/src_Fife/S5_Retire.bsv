@@ -7,6 +7,7 @@ package S5_Retire;
 
 import FIFOF        :: *;
 import SpecialFIFOs :: *;    // For mkPipelineFIFOF and mkBypassFIFOF
+import Connectable  :: *;
 
 // ----------------
 // Imports from 'vendor' libs
@@ -29,6 +30,7 @@ import Retire_Utils :: *;
 
 import RVFI_DII_Types :: *;    // For 'RVFI_DII_Execution' struct
 import RVFI_Report    :: *;
+import RVFI_BSV_to_RTL :: *;
 
 // ****************************************************************
 
@@ -62,7 +64,10 @@ interface Retire_IFC;
 
    // ----------------------------------------------------------------
    // Output stream of RVFI reports (to verifier/logger)
-   interface FIFOF_O #(RVFI_DII_Execution #(XLEN, 64)) fo_rvfi_reports;
+
+   // OLD: interface FIFOF_O #(RVFI_DII_Execution #(XLEN, 64)) fo_rvfi_reports;
+
+   interface RVFI_RTL_M_IFC #(XLEN, 64) rvfi_RTL_ports;
 
    // ----------------------------------------------------------------
    // Debugger control
@@ -153,6 +158,12 @@ module mkRetire (Retire_IFC);
    // RVFI reporting
 
    RVFI_Report_IFC rvfi_report <- mkRVFI_Report;
+
+   // Transactor from BSV RVFI struct to RTL buses
+
+   RVFI_BSV_to_RTL_IFC #(XLEN, 64) rvfi_BSV_to_RTL <- mkRVFI_BSV_to_RTL;
+
+   mkConnection (rvfi_report.fo_rvfi_reports, rvfi_BSV_to_RTL.fi_rvfi_reports);
 
    // ****************************************************************
    // BEHAVIOR
@@ -747,7 +758,10 @@ module mkRetire (Retire_IFC);
 
    // ----------------------------------------------------------------
    // Output stream of RVFI reports (to verifier/logger)
-   interface FIFOF_O fo_rvfi_reports = rvfi_report.fo_rvfi_reports;
+
+   // OLD: interface FIFOF_O fo_rvfi_reports = rvfi_report.fo_rvfi_reports;
+
+   interface rvfi_RTL_ports = rvfi_BSV_to_RTL.rvfi_RTL_ports;
 
    // ----------------------------------------------------------------
    // Debugger control

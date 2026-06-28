@@ -141,9 +141,9 @@ module mkTop (Empty);
    // ================================================================
    // Drain RVFI packets
 
-   rule rl_drain_RVFI;
-      let t <- pop_o (cpu.fo_rvfi_reports);
-   endrule
+   // rule rl_drain_RVFI;
+   //   let t <- pop_o (cpu.fo_rvfi_reports);
+   // endrule
 
    // ================================================================
    // INTERFACE

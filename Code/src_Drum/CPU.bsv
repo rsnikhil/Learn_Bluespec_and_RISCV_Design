@@ -12,6 +12,7 @@ package CPU;
 
 import FIFOF  :: *;
 import Assert :: *;
+import Connectable :: *;
 
 // ----------------
 // Imports from 'vendor' libs
@@ -45,6 +46,7 @@ import Fn_EX_Int     :: *;
 
 import RVFI_DII_Types :: *;    // For 'RVFI_DII_Execution' struct
 import RVFI_Report    :: *;
+import RVFI_BSV_to_RTL :: *;
 
 // ****************************************************************
 // Debugger control
@@ -153,6 +155,12 @@ module mkCPU (CPU_IFC);
    // RVFI reporting
 
    RVFI_Report_IFC rvfi_report <- mkRVFI_Report;
+
+   // Transactor from BSV RVFI struct to RTL buses
+
+   RVFI_BSV_to_RTL_IFC #(XLEN, 64) rvfi_BSV_to_RTL <- mkRVFI_BSV_to_RTL;
+
+   mkConnection (rvfi_report.fo_rvfi_reports, rvfi_BSV_to_RTL.fi_rvfi_reports);
 
    // ****************************************************************
    // BEHAVIOR: Actions
@@ -555,7 +563,10 @@ module mkCPU (CPU_IFC);
 
    // ----------------------------------------------------------------
    // Output stream of RVFI reports (to verifier/logger)
-   interface FIFOF_O fo_rvfi_reports = rvfi_report.fo_rvfi_reports;
+
+   // OLD: interface FIFOF_O fo_rvfi_reports = rvfi_report.fo_rvfi_reports;
+
+   interface rvfi_RTL_ports = rvfi_BSV_to_RTL.rvfi_RTL_ports;
 
    // ----------------------------------------------------------------
    // Debugger support
