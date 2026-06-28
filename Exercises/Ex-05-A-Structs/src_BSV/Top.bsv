@@ -24,10 +24,10 @@ module mkTop (Empty);
 	                           size:     MEM_4B,
 				   addr:     'h_8000_0000,
 				   data:     0,
-				   inum:     ?,
-				   pc:       ?,
-				   instr:    ?};
-
+				   epoch:    ?,
+				   xtra:     Mem_Req_Xtra {inum:     ?,
+							   pc:       ?,
+							   instr:    ?}};
 	    $display ("mem_req =  ", fshow (mem_req));
 	 endaction
       endseq);

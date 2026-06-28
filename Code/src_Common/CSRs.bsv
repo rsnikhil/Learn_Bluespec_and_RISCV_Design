@@ -43,7 +43,7 @@ function Bit #(XLEN) fn_legalize_mtvec (Bit #(XLEN) v_old, Bit #(XLEN) v_new);
 endfunction
 
 function Bit #(XLEN) fn_legalize_mie (Bit #(XLEN) x);
-   Bit #(XLEN) mask = zeroExtend (16'b_0010101010101010);
+   Bit #(XLEN) mask = zeroExtend (16'b_0000_1010_1010_1010);
    return (x & mask);
 endfunction
 

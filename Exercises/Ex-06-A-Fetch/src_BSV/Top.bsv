@@ -35,8 +35,9 @@ module mkTop (Empty);
       action
 	 let predicted_pc = 0;            // Only relevant in Fife
 	 let epoch        = 0;            // Only relevant in Fife
+	 let arch_inum    = 0;            // Only relevant for TestRIG etc.
 	 let flog         = InvalidFile;  // log file
-	 let y <- fn_Fetch (pc, predicted_pc, epoch, inum, flog);
+	 let y <- fn_Fetch (pc, predicted_pc, epoch, inum, arch_inum, flog);
 
 	 f_reqs.enq (y.mem_req);
 
@@ -66,13 +67,21 @@ module mkTop (Empty);
 
 						    // DMem interface
 						    to_FIFOF_O (f_reqs),
-						    to_FIFOF_I (f_rsps));
+						    to_FIFOF_I (f_rsps),
+
+						    // Debugger interface
+						    dummy_FIFOF_O,
+						    dummy_FIFOF_I);
 
    mkAutoFSM (
       seq
 	 action
 	    $display ("Initializing memory model");
-	    let init_params = Initial_Params {flog: InvalidFile};
+	    let init_params = Initial_Params {pc_reset_value: 'h_8000_0000,
+					      addr_base_mem:  'h_8000_0000,
+					      size_B_mem:     'h_1000_0000,
+					      flog: InvalidFile,
+					      dbg_listen_socket: 0};
 	    mems_devices.init (init_params);
 	 endaction
 

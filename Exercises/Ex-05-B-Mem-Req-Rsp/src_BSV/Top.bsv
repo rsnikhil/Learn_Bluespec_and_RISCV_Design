@@ -40,13 +40,21 @@ module mkTop (Empty);
 
 						    // DMem interface
 						    to_FIFOF_O (f_reqs),
-						    to_FIFOF_I (f_rsps));
+						    to_FIFOF_I (f_rsps),
+
+						    // Debugger interface
+						    dummy_FIFOF_O,
+						    dummy_FIFOF_I);
 
    mkAutoFSM (
       seq
 	 action
 	    $display ("Initializing memory model");
-	    let init_params = Initial_Params {flog: InvalidFile};
+	    let init_params = Initial_Params {pc_reset_value: 'h_8000_0000,
+					      addr_base_mem:  'h_8000_0000,
+					      size_B_mem:     'h_1000_0000,
+					      flog: InvalidFile,
+					      dbg_listen_socket: 0};
 	    mems_devices.init (init_params);
 	 endaction
 
@@ -55,9 +63,10 @@ module mkTop (Empty);
 	                           size:     MEM_4B,
 				   addr:     'h_8000_0000,
 				   data:     ?,
-				   inum:     1,
-				   pc:       'h_8000_0000,
-				   instr:    ?};
+				   epoch:    ?,
+				   xtra:     Mem_Req_Xtra {inum:  1,
+							   pc:    'h_8000_0000,
+							   instr: ?}};
 	    f_reqs.enq (mem_req);
 	    $display ("mem_req: ", fshow_Mem_Req (mem_req));
 	 endaction
