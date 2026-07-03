@@ -1,1 +1,10 @@
 *~
+*.o
+*.so
+exe_*_bsim
+exe_*_vsim
+C_for_bsim
+build_b
+OLD
+log.txt
+*_Candidate
